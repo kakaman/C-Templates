@@ -1,0 +1,92 @@
+
+Initializing the Ctrie: Create the ctrie. But leave the root as null.
+
+Nodes bellow the root are never converted into tombed nodes.
+
+Creating Inode:
+It has a single field main.
+
+Inserting into a new Ctrie:
+
+First a node (C1) of type cnode is created. It contains the new data represented by the key (K1). K1 is hashed into the proper spot. 
+Then an node (I1) of type inode is created. The main field is initializedd to C1.
+A compare and exchange (CAS) is performed at the root. the CAS has (expected value: NULL, new value: I1).
+If the CAS is successful, the insertion is completed. Else, the insertion has to be repeated.
+
+Inserting into a Ctrie:
+
+A key K2 is inserted into the hashtable. Its slot is different from K1. Thus, it should be next to K1.
+To keep the insertion thread-safe, the inserting thread creates a new cnode and copies C1. It then updates it with K2.
+A CAS is performed at L1->main with expected value of C1 and updated node as the new value.
+If the CAS is not successful, the insertion has to be repeated.
+
+Inserting into Ctrie with hash collision:
+
+Key K3 is inserted. It collides with K2. 
+A new cnode C2 is created with both K2 and K3. Then a new inode I2 is created. It sets its pointer to C2.
+Then creates an updated C1 that points to I2 in the slot where K2 and K3 collided.
+A CAS is performed at I1 again.
+
+Deleting from Ctrie:
+The process is the same as insert. Create an updated node and CAS.
+But if a key is the only one left on the level, a tombed node T1 is created and CASed with the Inode above. Then the contract function should run to shrink the tree.
+
+Tombed node:
+A node that contains a single key. No thread may modify the inode if it has a tomb node. 
+
+Inode:
+Points to Cnodes.
+An Inode that points to a tombed node is a tombed inode.
+An Inode that doesn't point is a NULL Inode.
+
+// ToDo: Implement Tombed inode case
+bool internal_ctrie_insert(inode_t* inode, const char* key, void* value, int data_size, unsigned int hash, int level)
+{
+    cnode_t* updated = inode->cnode;
+    bool CAS_return = false;
+    int slot = get_slot(hash);
+
+    // ToDo: Implement
+    if(level == 8)
+    {
+
+    }
+    else if (inode->node_type == TOMBED_INODE)
+    {
+        // ToDo: implement contract functionality.
+        return false;
+    }
+    else if(inode->node_type == EMPTY_INODE)
+    {
+        updated = cnode_init(level);
+        updated->array[slot] = snode_init(key, value, data_size);
+
+        CAS_return = __sync_bool_compare_and_swap(&inode->cnode, inode->cnode, updated);
+    }
+
+    inode_t* slot_inode = inode->cnode->array[slot];
+    if (slot_inode->node_type == INODE)
+    {
+        return internal_ctrie_insert(inode->cnode->array[slot], key, value, data_size, hash, level + 1);
+    }
+    else if(slot_inode->node_type == EMPTY_INODE)
+    {
+        updated = updated_cnode(inode->cnode, key, value, data_size, hash, slot);
+
+        // ToDo: CAS on inode->cnode and updated.
+        CAS_return = __sync_bool_compare_and_swap(&inode->cnode, inode->cnode, updated);
+    }
+
+    // Keep repeating until it works. Maybe the while loop should be around the outer insert like in the documentation.
+//    while(CAS_return == false)
+//    {
+//        CAS_return = __sync_bool_compare_and_swap(&inode->cnode, inode->cnode, updated);
+//    }
+
+    if(CAS_return == true)
+    {
+        inode->node_type = INODE;
+    }
+
+    return CAS_return;
+}

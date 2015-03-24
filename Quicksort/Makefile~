@@ -1,0 +1,18 @@
+#Quicksort compiler
+
+CC = gcc
+INC =
+FLAGS = -D_GNU_SOURCE -g -W -Wall -std=c99
+LIBS =
+
+all: quicksort
+
+quicksort.o: quicksort.c quicksort.h
+	$(CC) -c $(FLAGS) $(INC) $< -o $@ $(LIBS)
+
+quicksort: quicksort.o
+	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
+
+clean:
+	$(RM) -r *.o scheduling
+
