@@ -31,14 +31,19 @@ void swap(heap_t *heap, int left, int right)
     return;
 }
 
-// Initialize the heap. Returns an empty max heap with size 0.
-heap_t* heap_init(int data_size, int (*compare)(void const*, void const*), void (*print)(void const*))
+heap_t* heap_init(int data_size,
+                  int (*compare)(void const*, void const*),
+                  bool (*find)(void const*, void const*),
+                  void (*modify)(void*, void const*),
+                  void (*print)(void const*))
 {
     heap_t* heap = malloc(sizeof(heap_t));
     heap->size = 0;
     heap->data_size = data_size;
     heap->print = print;
     heap->compare = compare;
+    heap->find = find;
+    heap->modify = modify;
     heap->allocated_size = 1;
     heap->data = malloc(data_size);
 
@@ -122,7 +127,7 @@ void heap_insert(heap_t* heap, void const* data)
     return;
 }
 
-void const* heap_remove(heap_t* heap, int location)
+void const* heap_remove_at(heap_t* heap, int location)
 {
     void const* location_ptr = heap->data + (location * heap->data_size);
     void const* last_ptr = heap->data + (heap->size * heap->data_size);
@@ -130,6 +135,11 @@ void const* heap_remove(heap_t* heap, int location)
 
     swap(heap, location, heap->size);
     heap->size--;
+    if (heap->size < (heap->allocated_size / 2))
+    {
+        heap->data = realloc(heap->data, (heap->allocated_size / 2) * heap->data_size);
+        heap->allocated_size /= 2;
+    }
 
     if(comp_val < 0)
     {
@@ -141,6 +151,57 @@ void const* heap_remove(heap_t* heap, int location)
     }
 
     return (heap->data + (heap->size * heap->data_size));
+}
+
+// If you have to find.
+void heap_modify_element(heap_t* heap, void const* data, void const* element, int* map)
+{
+    if(heap == NULL || data == NULL || element == NULL)
+    {
+        printf("\nInvalid inputs for heap_modify_element().\n");
+        return;
+    }
+
+    int location = heap_find_location(heap, element);
+    if(location == -1)
+    {
+        printf("Element not in heap.\n");
+        return;
+    }
+
+    heap_modify_element_at(heap, data, location, map);
+    return;
+}
+
+void heap_modify_element_at(heap_t* heap, void const* data, int location, int* map)
+{
+    if(heap == NULL || location == -1)
+    {
+        printf("\nInvalid inputs for heap_modify_element_at().\n\n");
+        return;
+    }
+
+    // ToDo: Modify for decrease key. Copied from heap_remove_at().
+    void const* location_ptr = heap->data + (location * heap->data_size);
+    void const* parent_ptr = heap->data + (PARENT(location) * heap->data_size);
+
+    heap->modify(location_ptr, data);
+    int comp_val = heap->compare(parent_ptr, location_ptr);
+
+    if(location == 0)
+    {
+        int location_index = heap->access(location_ptr);
+        map[location_index] = 0;
+        return;
+    }
+
+
+    if (comp_val == 1) // if parent > current heapify up.
+    {
+        heapify_up(heap, location, map);
+    }
+
+    return;
 }
 
 void const* get_heap_top(heap_t* heap)
@@ -163,9 +224,66 @@ void const* heap_remove_top(heap_t* heap)
 
     swap(heap, 0, (heap->size - 1));
     heap->size--;
+    if(heap->size < (heap->allocated_size / 2))
+    {
+        heap->data = realloc(heap->data, (heap->allocated_size / 2) * heap->data_size);
+        heap->allocated_size /= 2;
+    }
+
     heapify_down(heap, 0);
 
     return (heap->data + (heap->size * heap->data_size));
+}
+
+// Find an element in the Heap. O(n) because it has to search every element.
+bool element_in_heap(heap_t* heap, void const* data)
+{
+    bool found = false;
+
+    if(heap->size == 0 || data == NULL)
+    {
+        printf("Input values for element_in_heap() invalid.\n");
+        return found;
+    }
+
+    void const* location_ptr = NULL;
+
+    for(int location = 0; location < heap->size; location++)
+    {
+        location_ptr = heap->data + (location * heap->data_size);
+        if(heap->find(location_ptr, data) == true)
+        {
+            found = true;
+            break;
+        }
+    }
+
+    return found;
+}
+
+int heap_find_location(heap_t* heap, void const* data)
+{
+    if(heap == NULL)
+    {
+        printf("Input values for heap_find_location() invalid.\n");
+        return -1;
+    }
+
+    int location = -1;
+
+    void const* location_ptr = NULL;
+
+    for(int i = 0; i < heap->size; i++)
+    {
+        location_ptr = heap->data + (i * heap->data_size);
+        if(heap->find(location_ptr, data) == true)
+        {
+            location = i;
+            break;
+        }
+    }
+
+    return location;
 }
 
 // Prints the max heap by doing a level-order traversal
@@ -189,115 +307,4 @@ void print_heap(heap_t* heap)
     return;
 }
 
-void print_int(void const* ptr)
-{
-    int value = *((int*) ptr);
-    printf("%d", value);
 
-    return;
-}
-
-int min_int(void const* left_ptr, void const* right_ptr)
-{
-    int left = *((int*) left_ptr);
-    int right = *((int*) right_ptr);
-
-    if(left < right)
-    {
-        return -1;
-    }
-
-    if(left > right)
-    {
-        return 1;
-    }
-
-    return 0;
-}
-
-int max_int(void const* left_ptr, void const* right_ptr)
-{
-    int left = *((int*) left_ptr);
-    int right = *((int*) right_ptr);
-
-    if(left < right)
-    {
-        return 1;
-    }
-
-    if(left > right)
-    {
-        return -1;
-    }
-
-    return 0;
-}
-
-int main()
-{
-    heap_t* max = heap_init(sizeof(int), min_int, print_int);
-//    heap_t* min = heap_init(sizeof(int), min_int, print_int);
-
-    char * line = NULL;
-    size_t len = 0;
-    while (getline(&line, &len, stdin) != -1)
-    {
-        int value;
-        sscanf(line, "%d", &value);
-        heap_insert(max, &value);
-
-    }
-    free(line);
-
-    printf("Max:");
-    print_heap(max);
-
-    while(get_heap_size(max) > 0)
-    {
-        int value = *((int*) heap_remove_top(max));
-
-        printf("%d ", value);
-    }
-
-    printf("\n");
-//
-//    for (int i = 0; i < 4; i++)
-//    {
-//        printf("%d\n", i);
-//        if (array[i] < get_heap_top(max))
-//        {
-//            insert_max_heap(max, array[i]);
-//            //printf("Max 1: ");
-//            //print_heap(max);
-//        }
-//        else
-//        {
-//            insert_min_heap(min, array[i]);
-//            //printf("Min 1: ");
-//            //print_heap(min);
-//        }
-//
-//        if ((get_heap_size(max) - get_heap_size(min)) > 1)
-//        {
-//            int data = remove_max(max);
-//            insert_min_heap(min, data);
-//            //printf("Min 2: ");
-//            //print_heap(min);
-//        }
-//
-//        if (get_heap_size(min) > get_heap_size(max))
-//        {
-//            int data = remove_min(min);
-//            insert_max_heap(max, data);
-//            //printf("Max 2: ");
-//            //print_heap(max);
-//        }
-//
-//    }
-//    printf("Min: ");
-//    print_heap(min);
-//    printf("Max: ");
-//    print_heap(max);
-
-    return 1;
-}

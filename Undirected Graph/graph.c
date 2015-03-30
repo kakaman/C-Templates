@@ -6,7 +6,7 @@
 
 #include "graph.h"
 
-void print_graph(graph_t* graph)
+void print_graph(undirected_graph_t* graph)
 {
     int i;
     for (i = 0; i < graph->vertices_size; i++)
@@ -43,10 +43,10 @@ void* realloc_clear(void* ptr, size_t element_size, int index, int* count_ptr)
     return realloced_ptr;
 }
 
-graph_t* graph_init()
+undirected_graph_t* graph_init()
 {
     // Create a new graph
-    graph_t* graph = malloc(sizeof(graph_t));
+    undirected_graph_t* graph = malloc(sizeof(undirected_graph_t));
 
     //Initialize the variables
     graph->num_vertices = 0;
@@ -69,15 +69,10 @@ vertex_t* vertex_malloc(int index, int id, int size)
     vertex->index = index;
     vertex->id = id;
 
-    // Allocate memory for in_edges array.
-    vertex->in_count = 0;
-    vertex->in_size = size;
-    vertex->in_edges = calloc(size, sizeof(edge_t*));
-
-    // Allocate memory for out_edges array.
-    vertex->out_count = 0;
-    vertex->out_size = size;
-    vertex->out_edges = calloc(size, sizeof(edge_t*));
+    // Allocate memory for edges array.
+    vertex->degree = 0;
+    vertex->edges_size = size;
+    vertex->edges = calloc(size, sizeof(edge_t*));
 
     return vertex;
 }
@@ -106,7 +101,7 @@ void set_edge(edge_t* edge, vertex_t* source, vertex_t* dest)
     return;
 }
 
-vertex_t* add_or_get_vertex(graph_t* graph, int index)
+vertex_t* add_or_get_vertex(undirected_graph_t* graph, int index)
 {
     if(graph->vertices_size <= index)
     {
@@ -136,7 +131,8 @@ int add_edge_to_vertex_list(edge_t*** edges, edge_t* edge, int count, int* size)
     return count + 1;
 }
 
-void remove_vertex(graph_t* graph, int index)
+// ToDo: Properly write this.
+void remove_vertex(undirected_graph_t* graph, int index)
 {
     vertex_t* vertex = graph->vertices[index];
     graph->num_vertices--;
@@ -144,8 +140,7 @@ void remove_vertex(graph_t* graph, int index)
     graph->vertices[index]->index = index;
     graph->vertices[graph->num_vertices] = NULL;
 
-    free(vertex->in_edges);
-    free(vertex->out_edges);
+    free(vertex->edges);
     free(vertex);
 
     return;
@@ -160,24 +155,24 @@ int remove_edge_from_vertex_list(edge_t** edges, int i, int count)
     return count;
 }
 
-void remove_directed_edge(graph_t* graph, edge_t* edge)
+void remove_edge(undirected_graph_t* graph, edge_t* edge)
 {
     int i;
-    for(i = 0; i < edge->src->out_count; i++)
+    for(i = 0; i < edge->src->degree; i++)
     {
-        if(edge->src->out_edges[i] == edge)
+        if(edge->src->edges[i] == edge)
         {
-            edge->src->out_count = remove_edge_from_vertex_list(edge->src->out_edges, i, edge->src->out_count);
+            edge->src->degree = remove_edge_from_vertex_list(edge->src->edges, i, edge->src->degree);
 
             break;
         }
     }
 
-    for(i = 0; i < edge->dest->in_count; i++)
+    for(i = 0; i < edge->dest->degree; i++)
     {
-        if(edge->dest->in_edges[i] == edge)
+        if(edge->dest->edges[i] == edge)
         {
-            edge->dest->in_count = remove_edge_from_vertex_list(edge->dest->in_edges, i, edge->dest->in_count);
+            edge->dest->degree = remove_edge_from_vertex_list(edge->dest->edges, i, edge->dest->degree);
 
             break;
         }
@@ -193,27 +188,27 @@ void remove_directed_edge(graph_t* graph, edge_t* edge)
     return;
 }
 
-void remove_vertices(graph_t* graph)
+void remove_vertices(undirected_graph_t* graph)
 {
     int i;
     for(i = 0; i < graph->vertices_size; i++)
     {
         int j;
-        for(j = 0; j < graph->vertices[i]->in_size; j++)
+        for(j = 0; j < graph->vertices[i]->edges_size; j++)
         {
-            free(graph->vertices[i]->in_edges[j]);
+            free(graph->vertices[i]->edges[j]);
         }
 
-        for(j = 0; j < graph->vertices[i]->out_size; j++)
+        for(j = 0; j < graph->vertices[i]->edges_size; j++)
         {
-            free(graph->vertices[i]->out_edges[j]);
+            free(graph->vertices[i]->edges[j]);
         }
 
         free(graph->vertices[i]);
     }
 }
 
-void remove_edges(graph_t* graph)
+void remove_edges(undirected_graph_t* graph)
 {
     int i;
     for(i = 0; i < graph->edges_size; i++)
@@ -222,7 +217,7 @@ void remove_edges(graph_t* graph)
     }
 }
 
-void graph_delete(graph_t* graph)
+void graph_delete(undirected_graph_t* graph)
 {
     remove_vertices(graph);
 
@@ -232,7 +227,7 @@ void graph_delete(graph_t* graph)
 }
 
 
-void add_directed_edge(graph_t* graph, int source, int destination, int weight)
+void add_directed_edge(undirected_graph_t* graph, int source, int destination, int weight)
 {
     edge_t* edge = edge_malloc(graph->num_edges);
     if(graph->num_edges == graph->edges_size)
@@ -259,9 +254,9 @@ void add_directed_edge(graph_t* graph, int source, int destination, int weight)
     return;
 }
 
-graph_t* parse_graph()
+undirected_graph_t* parse_graph()
 {
-    graph_t* graph = graph_init();
+    undirected_graph_t* graph = graph_init();
 
     FILE* file = freopen("test.txt", "r", stdin);
     int src, dest, weight;
@@ -277,9 +272,9 @@ graph_t* parse_graph()
 }
 
 // Use this when number of edges and number of vertices are not given as first line.
-graph_t* parse_adjacency_list_only(char* str)
+undirected_graph_t* parse_adjacency_list_only(char* str)
 {
-    graph_t* graph = graph_init();
+    undirected_graph_t* graph = graph_init();
 
     FILE* file = fopen(str, "r");
     int src, dest, weight;
@@ -295,9 +290,9 @@ graph_t* parse_adjacency_list_only(char* str)
 }
 
 // Use this when number of edges and number of vertices are given as first line.
-graph_t* parse_adjacency_list(char* str)
+undirected_graph_t* parse_adjacency_list(char* str)
 {
-    graph_t* graph = graph_init();
+    undirected_graph_t* graph = graph_init();
 
     char * line = NULL;
     size_t len = 0;
@@ -326,14 +321,14 @@ graph_t* parse_adjacency_list(char* str)
 }
 
 // ToDo: Construct a graph from a file with an adjacency matrix.
-graph_t* parse_adjacency_matrix(char* str)
+undirected_graph_t* parse_adjacency_matrix(char* str)
 {
     return NULL;
 }
 
 int main()
 {
-    graph_t* graph = parse_graph();
+    undirected_graph_t* graph = parse_graph();
     print_graph(graph);
     return 1;
 }

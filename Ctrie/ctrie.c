@@ -362,6 +362,11 @@ cnode_t* updated_insert_cnode(cnode_t* cnode, const char* key, void* value,  int
     return updated;
 }
 
+inode_t* change_inode_type(snode_t* collision, const char* key, unsigned int hash, int level)
+{
+
+}
+
 // Recursive function.
 inode_t* change_inode_type(snode_t* collision, const char* key, void* value, int data_size, unsigned int hash, int level)
 {
@@ -519,42 +524,68 @@ snode_t* internal_ctrie_remove(inode_t* inode, const char* key, int data_size, u
 {
     bool CAS_return = false;
     int slot = get_slot(hash, level);
+    printf("Got here\n.");
 
-    if(inode->node_type == LNODE)
+    if(level == 8)
     {
-        lnode_t* updated_lnode = lnode_cpy(inode->lnode);
-        snode_t* ret_val = lnode_remove(updated_lnode, key);
-
-        CAS_return = __sync_bool_compare_and_swap(&inode->lnode, inode->lnode, updated_lnode);
-
-        if(CAS_return == true)
+        if (inode->node_type == LNODE)
         {
-            return ret_val;
+            printf("Node type: LNODE\n.");
+            lnode_t* updated_lnode = lnode_cpy(inode->lnode);
+            snode_t* ret_val = lnode_remove(updated_lnode, key);
+
+            CAS_return = __sync_bool_compare_and_swap(&inode->lnode, inode->lnode, updated_lnode);
+
+            if (CAS_return == true)
+            {
+                return ret_val;
+            }
+            else
+            {
+                return NULL;
+            }
         }
         else
         {
             return NULL;
         }
+
     }
     if(inode->node_type == EMPTY_INODE)
     {
+        printf("Node type: EMPTY_INODE\n.");
         printf("The (key, value) pair does not exist.\n");
         return NULL;
     }
     else if(inode->node_type == TOMBED_INODE)
     {
+        printf("Node type: TOMBED_INODE\n.");
         printf("Tombed Inode. Run contract first.\n");
         return NULL;
     }
+    else if(inode->node_type == SNODE)
+    {
+        inode_t* inode_temp = inode;
+        printf("Node type: SNODE\n.");
+        if(strcmp(key, inode->snode->key) != 0)
+        {
+            printf("The (key, value) pair does not exist.\n");
+            return NULL;
+        }
+        snode_t* snode = inode->snode;
+    }
 
+    printf("Get inode at Slot: %d.\n", slot);
     inode_t* slot_inode = inode->cnode->array[slot];
     if(slot_inode->node_type == EMPTY_INODE)
     {
+        printf("Node at slot type: EMPTY_INODE\n.");
         printf("The (key, value) pair does not exist.\n");
         return NULL;
     }
     if(slot_inode->node_type == INODE)
     {
+        printf("Node at slot type: INODE\n.");
         return internal_ctrie_remove(slot_inode, key, data_size, hash, level + 1);
     }
 
@@ -562,7 +593,7 @@ snode_t* internal_ctrie_remove(inode_t* inode, const char* key, int data_size, u
 }
 
 
-void* ctrie_remove(ctrie_t* ctrie, const char* key)
+snode_t* ctrie_remove(ctrie_t* ctrie, const char* key)
 {
     if(ctrie == NULL || key == NULL)
     {
@@ -573,12 +604,12 @@ void* ctrie_remove(ctrie_t* ctrie, const char* key)
     snode_t* removed = NULL;
     unsigned int hash = get_string_hash(key);
 
-    while(removed == NULL)
-    {
+    //while(removed == NULL)
+    //{
         removed = internal_ctrie_remove(ctrie->root, key, ctrie->data_size, hash, 1);
-    }
+    //}
 
-    return removed->value;
+    return removed;
 }
 
 snode_t* internal_ctrie_lookup(inode_t* inode, const char* key, int data_size, unsigned int hash, int level)
@@ -604,8 +635,16 @@ snode_t* internal_ctrie_lookup(inode_t* inode, const char* key, int data_size, u
     }
     else if(inode->node_type == SNODE)
     {
-        printf("(Key, Value) found.\n");
-        return inode->snode;
+        if(strcmp(key, inode->snode->key) == 0)
+        {
+            printf("(Key, Value) found.\n");
+            return inode->snode;
+        }
+        else
+        {
+            printf("(Key, Value) not found.\n");
+            return NULL;
+        }
     }
     else if (inode->node_type == CNODE)
     {
@@ -672,6 +711,8 @@ int main()
     printf("Calling ctrie_insert(ctrie, Test String, 2);\n");
     bool ret_val = ctrie_insert(ctrie, "1", "Test String");
     printf("ctrie_insert() returned: %d\n", ret_val);
+
+    printf("ret_val = ctrie_insert(ctrie, hello, Test String 2);\n");
     ret_val = ctrie_insert(ctrie, "hello", "Test String 2");
     printf("ctrie_insert() returned: %d\n", ret_val);
 
@@ -679,6 +720,9 @@ int main()
     snode_t* snode = ctrie_lookup(ctrie, "hello");
     printf("ctrie_lookup() returned: %s\n", (char*)snode->value);
 
-    printf(Calling)
+    printf("Calling ctrie_remove(ctrie, hello);\n");
+    snode = ctrie_remove(ctrie, "hello");
+    printf("ctrie_remove() returned: %s\n", (char*)snode->value);
+    //printf(Calling);
     return 1;
 }

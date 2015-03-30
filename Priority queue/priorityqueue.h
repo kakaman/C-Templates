@@ -1,21 +1,39 @@
-typedef struct
+/*
+ * priorityqueue.h
+ *
+ *  Created on: Mar 24, 2015
+ *      Author: vyshnav
+ */
+
+#pragma once
+
+// Priority Queue implementation with a Minimum Heap as a base.
+typedef struct _pqueue_t
 {
+    int size;
+    int allocated_size;
+    int data_size;
+    int (*compare)(void const*, void const*);
+    bool (*find)(void const*, void const*);
+    void (*print)(void const*);
     void* data;
-    int priority;
-} p_queue_data_t;
+} pqueue_t;
 
-typedef struct
-{
-    p_queue_data_t* array;
-    int num_elements;
-    int allocated;
-} p_queue_t;
+// Constructor and destructor for pqueue.
+pqueue_t* pqueue_init(int data_size, int (*compare)(void const*, void const*), bool (*find)(void const*, void const*), void (*print)(void const*));
+void clear_pqueue(pqueue_t* pqueue);
 
-// Constructor and Destructor.
-p_queue_t* p_queue_init(int size);
-void p_queue_destroy(p_queue_t* p_queue);
+void print_pqueue(pqueue_t* pqueue);
+int get_pqueue_size(pqueue_t* pqueue); // Returns size of pqueue.
 
-// Priority Queue functions.
-void p_queue_insert(p_queue_t* p_queue, void* data, int priority);
-void* p_queue_remove(p_queue_t* p_queue, int* priority);
-void* p_queue_peek(p_queue_t* p_queue, int *pri);
+void pqueue_insert(pqueue_t* pqueue, void const* data);
+void const* pqueue_remove(pqueue_t* pqueue, int location);
+
+void const* get_pqueue_top(pqueue_t* pqueue);
+void const* pqueue_remove_top(pqueue_t* pqueue);
+
+void const* pqueue_find(pqueue_t* pqueue, void const* data);
+
+// Decrease key functions.
+void pqueue_decrease_key(pqueue_t* pqueue, void const* data);
+void pqueue_decrease_key_at(pqueue_t* pqueue, int location);

@@ -54,3 +54,9 @@ void remove_vertex(graph_t* graph, int id);
 int add_edge_to_vertex_list(edge_t*** edges, edge_t* edge, int count, int* size);
 int remove_edge_from_vertex_list(edge_t** edges, int i, int count);
 
+// Use this when a normal adjacency_list is given as an input.
+graph_t* parse_adjacency_list_only(char* str);
+// Use this when number of edges and number of vertices are given as first line.
+graph_t* parse_adjacency_list(char* str);
+// Use this when constructing a graph from a file with an adjacency matrix.
+graph_t* parse_adjacency_matrix(char* str);

@@ -65,7 +65,7 @@ typedef struct _ctrie_t
 snode_t* snode_init(const char* key, void* value, int data_size);
 void snode_delete(snode_t* snode);
 void snode_create(snode_t* snode, const char* key, void* value, int data_size);
-
+void snode_remove(snode_t* snode);
 // inode functions
 inode_t* inode_init();
 void inode_delete(inode_t* inode);
@@ -80,7 +80,7 @@ void ctrie_destroy(ctrie_t* ctrie);
 
 // Ctrie functions
 bool ctrie_insert(ctrie_t* ctrie, const char* key, void* value);
-void* ctrie_remove(ctrie_t* ctrie, const char* key);
+snode_t* ctrie_remove(ctrie_t* ctrie, const char* key);
 snode_t* ctrie_lookup(ctrie_t* ctrie, const char* key);
 int ctrie_update(ctrie_t* ctrie, const char* key);
 
