@@ -186,19 +186,15 @@ void heap_modify_element_at(heap_t* heap, void const* data, int location, int* m
     void const* parent_ptr = heap->data + (PARENT(location) * heap->data_size);
 
     heap->modify(location_ptr, data);
-    int comp_val = heap->compare(parent_ptr, location_ptr);
+    int comp_val = heap->compare(location_ptr, parent_ptr);
 
-    if(location == 0)
+    if (comp_val < 0)
     {
-        int location_index = heap->access(location_ptr);
-        map[location_index] = 0;
-        return;
+        heapify_up(heap, location);
     }
-
-
-    if (comp_val == 1) // if parent > current heapify up.
+    else
     {
-        heapify_up(heap, location, map);
+        heapify_down(heap, location);
     }
 
     return;
