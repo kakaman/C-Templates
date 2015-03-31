@@ -5,69 +5,59 @@
 
 #include "dsets.h"
 
-disjoint_set_t* create_disjoint_set(void* value)
+disjoint_set_t* create_disjoint_set()
 {
-    return NULL;
+    disjoint_set_t* set = malloc(sizeof(disjoint_set_t));
+    set->parent = NULL;
+    set->set_size = 0;
+
+    return set;
 }
 
-void delete_disjoint_set(disjoint_set_t* node)
+void delete_disjoint_set(disjoint_set_t* set)
 {
+    set->parent = NULL;
+    free(set);
 
+    set = NULL;
+
+    return;
 }
 
-void disjoint_set_union(disjoint_set_t* set_1, disjoint_set_t* set_2)
+// Attach to larger.
+void disjoint_set_union(disjoint_set_t* left, disjoint_set_t* right)
 {
-
-}
-
-ds_node_t* disjoint_set_find(disjoint_set_t* set)
-{
-    return NULL;
-}
-
-ds_node_t* create_ds_node(void* value)
-{
-    ds_node_t* node = malloc(sizeof(ds_node_t));
-    node->value = value;
-    node->parent = NULL;
-    node->rank = 0;
-    return node;
-}
-
-void ds_node_union(ds_node_t* node1, ds_node_t* node2)
-{
-    if (node1->rank > node2->rank)
+    if (left->set_size > right->set_size)
     {
-        node2->parent = node1;
+        right->parent = left;
+        // left->set_size += right->set_size;
     }
-    else if (node2->rank > node1->rank)
+    else if (right->set_size > left->set_size)
     {
-        node1->parent = node2;
+        left->parent = right;
+        // right->set_size += left->set_size;
     }
     else
-    { /* they are equal */
-        node2->parent = node1;
-        node1->rank++;
+    {
+        right->parent = left;
+        left->set_size++;
     }
+
+    return;
 }
 
-ds_node_t* ds_node_find(ds_node_t* node)
+disjoint_set_t* disjoint_set_find(disjoint_set_t* set)
 {
-    ds_node_t* temp;
-    /* Find the root */
-    ds_node_t* root = node;
-    while (root->parent != NULL)
+    if (set == NULL)
     {
-        root = root->parent;
+        return NULL;
     }
-    /* Update the parent pointers */
-    while (node->parent != NULL)
+    else if (set->parent != set)
     {
-        temp = node->parent;
-        node->parent = root;
-        node = temp;
+        set->parent = disjoint_set_find(set->parent);
     }
-    return root;
+
+    return set->parent;
 }
 
 int main()
