@@ -28,16 +28,12 @@ void* qs_realloc_clear(void* ptr, ssize_t element_size, int index, int* count_pt
 
 qs_t* quicksort_init(void* array,
                      int size,
-                     int offset_primary,
-                     int offset_secondary,
                      int (*compare)(void*, void*),
                      void (*print)(void*))
 {
     qs_t* qs_array = malloc(sizeof(qs_t));
     qs_array->size = size;
     qs_array->allocated_size = size;
-    qs_array->offset_primary = offset_primary;
-    qs_array->offset_secondary = offset_secondary;
     qs_array->print = print;
     qs_array->compare = compare;
     qs_array->data = array;
@@ -71,23 +67,6 @@ void print_array(qs_t* array)
     printf("\n");
 
     return;
-}
-
-int add_elements(qs_t* array)
-{
-    if(array == NULL)
-        return -1;
-
-    void* element_ptr = NULL;
-    int total = 0;
-    int offset = array->offset_primary;
-
-    for(int i = 0; i < array->size; i++)
-    {
-         element_ptr = array->data[i];
-         total += *(int*)(element_ptr + offset);
-    }
-    return total;
 }
 
 // Insert element into the quicksort array.
@@ -169,19 +148,19 @@ int compute_median(qs_t* array, int min, int max)
     void* mid_ptr = array->data[mid];
     void* max_ptr = array->data[max];
 
-    int offset = array->offset_primary;
-    int min_val = *(int*)(min_ptr + offset);
-    int mid_val = *(int*)(mid_ptr + offset);
-    int max_val = *(int*)(max_ptr + offset);
+    int min_mid = array->compare(min_ptr, mid_ptr); // Returns 1 if min is larger than min. -1 if smaller.
+    int mid_max = array->compare(mid_ptr, max_ptr); // Returns 1 if mid is larger than max. -1 if smaller.
+    int min_max = array->compare(min_ptr, max_ptr); // Returns 1 if min is larger than max. -1 if smaller.
 
-    if((min_val <= mid_val && min_val >= max_val) || (min_val >= mid_val && min_val <= max_val))
-    {
-         return min;
-    }
-
-    if((mid_val <= min_val && mid_val >= max_val) || (mid_val >= min_val && mid_val <= max_val))
+    // if((mid >= max && mid <= min) || (mid >= min && mid <= max)
+    if((mid_max >=0 && min_mid >= 0) || (min_mid <= 0 && mid_max <= 0))
     {
         return mid;
+    }
+    // if((min <= mid && min >= max) || min >= mid && min <= max)
+    else if((min_mid <= 0 && min_max >= 0) || (min_mid >= 0 && min_max <= 0))
+    {
+         return min;
     }
 
     return max;
@@ -189,20 +168,14 @@ int compute_median(qs_t* array, int min, int max)
 
 int partition(qs_t* array, int min, int max)
 {
-    int offset = array->offset_primary;
-
     void* min_ptr = array->data[min];
-    int min_val = *(int*)(min_ptr + offset);
-
-    int pivot_value = min_val;
 
     int pivot_index = min + 1;
     for (int j = min + 1; j <= max; j++)
     {
         void* temp = array->data[j];
-        int val = *(int*)(temp + offset);
-
-        if (val < pivot_value)
+        int comp = array->compare(min_ptr, temp);
+        if (comp == 1)
         {
             void* temp = array->data[j];
             array->data[j] = array->data[pivot_index];
@@ -220,17 +193,15 @@ int partition(qs_t* array, int min, int max)
 
 int quicksort(qs_t* array, int min, int max)
 {
-//    printf("Running Quicksort. Min: %d Max: %d.\n", min, max);
     if (max < min || min > max || min == max)
     {
-//        printf("Invalid Min: %d Max: %d.\n\n", min, max);
+
         return 0;
     }
 
     int comparisons = (max - min); // The number of comparisons is the size of the array.
 
     int median = compute_median(array, min, max);
-//    printf("Median: %d.\n", median);
 
     void* temp = array->data[min];
     array->data[min] = array->data[median];
@@ -238,89 +209,8 @@ int quicksort(qs_t* array, int min, int max)
 
     int pivot = partition(array, min, max);
 
-//    printf("Pivot: %d.\n\n", pivot);
-
     comparisons += quicksort(array, min, pivot - 1);
     comparisons += quicksort(array, pivot + 1, max);
 
     return comparisons;
-}
-
-int quicksort_secondary(qs_t* array, int min, int max)
-{
-    if (max < min || min > max || min == max)
-    {
-        return 0;
-    }
-
-    int comparisons = (max - min); // The number of comparisons is the size of the array.
-
-    int median = compute_median_secondary(array, min, max);
-
-    void* temp = array->data[min];
-    array->data[min] = array->data[median];
-    array->data[median] = temp;
-
-    int pivot = partition_secondary(array, min, max);
-
-    comparisons += quicksort_secondary(array, min, pivot - 1);
-    comparisons += quicksort_secondary(array, pivot + 1, max);
-
-    return comparisons;
-}
-
-int compute_median_secondary(qs_t* array, int min, int max)
-{
-    int mid = min + (max - min) / 2;
-    int offset = array->offset_secondary;
-
-    void* min_ptr = array->data[min];
-    void* mid_ptr = array->data[mid];
-    void* max_ptr = array->data[max];
-
-    int min_val = *(int*)(min_ptr + offset);
-    int mid_val = *(int*)(mid_ptr + offset);
-    int max_val = *(int*)(max_ptr + offset);
-
-    if((min_val <= mid_val && min_val >= max_val) || (min_val >= mid_val && min_val <= max_val))
-    {
-         return min;
-    }
-
-    if((mid_val <= min_val && mid_val >= max_val) || (mid_val >= min_val && mid_val <= max_val))
-    {
-        return mid;
-    }
-
-    return max;
-}
-
-int partition_secondary(qs_t* array, int min, int max)
-{
-    int offset = array->offset_secondary;
-    void* min_ptr = array->data[min];
-    int min_val = *(int*)(min_ptr + offset);
-
-    int pivot_value = min_val;
-
-    int pivot_index = min + 1;
-    for (int j = min + 1; j <= max; j++)
-    {
-        void* temp = array->data[j];
-        int val = *(int*)(temp + offset);
-
-        if (val < pivot_value)
-        {
-            void* temp = array->data[j];
-            array->data[j] = array->data[pivot_index];
-            array->data[pivot_index] = temp;
-            pivot_index++;
-        }
-    }
-
-    void* temp = array->data[min];
-    array->data[min] = array->data[pivot_index - 1];
-    array->data[pivot_index - 1] = temp;
-
-    return (pivot_index - 1);
 }
