@@ -1,17 +1,10 @@
 #pragma once
 
-//typedef struct _ds_node_t
-//{
-//    void* value;
-//    struct _ds_node_t* parent;
-//    int rank;
-//} ds_node_t;
-
 // This struct is meant to be inserted into the object using disjoint sets.
 typedef struct _disjoint_set_t
 {
-    disjoint_set_t* parent;
-    int set_size;
+    struct _disjoint_set_t* parent;
+    int rank;
 } disjoint_set_t;
 
 disjoint_set_t* create_disjoint_set();

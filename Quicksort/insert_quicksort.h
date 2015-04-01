@@ -1,33 +1,35 @@
 /*
- * quicksort.h
+ * insert_quicksort.h
  *
- *  Created on: Mar 18, 2015
- *      Author: Vyshnav Kakivaya
+ *  Created on: Mar 31, 2015
+ *      Author: vyshnav
  */
 
-#ifndef QUICKSORT_H_
-#define QUICKSORT_H_
+#ifndef INSERT_QUICKSORT_H_
+#define INSERT_QUICKSORT_H_
 
 typedef struct _qs_t
 {
     int size;
     int allocated_size;
+    int data_size;
     int offset_primary;
     int offset_secondary;
     int (*compare)(void*, void*);
     void (*print)(void*);
-    void** data;
+    void* data;
 }qs_t;
 
 // Access Primary is the primary sort.
 // Access Secondary is the secondary sort based on a different variable.
-qs_t* empty_quicksort_init(int offset_primary,
+qs_t* empty_quicksort_init(ssize_t data_size,
+                     int offset_primary,
                      int offset_secondary,
                      int (*compare)(void*, void*),
                      void (*print)(void*));
 
 qs_t* quicksort_init(void* array,
-                     int size,
+                     ssize_t data_size,
                      int offset_primary,
                      int offset_secondary,
                      int (*compare)(void*, void*),
@@ -56,4 +58,4 @@ int partition_secondary(qs_t* array, int min, int max);
 
 void swap(qs_t* array, int index_one, int index_two);
 
-#endif /* QUICKSORT_H_ */
+#endif /* INSERT_QUICKSORT_H_ */

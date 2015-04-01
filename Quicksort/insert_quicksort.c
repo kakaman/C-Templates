@@ -1,8 +1,8 @@
 /*
- * quicksort.c
+ * insert_quicksort.c
  *
- *  Created on: Mar 18, 2015
- *      Author: Vyshnav Kakivaya
+ *  Created on: Mar 31, 2015
+ *      Author: vyshnav
  */
 
 #include <stdio.h>
@@ -11,10 +11,34 @@
 #include <stdbool.h>
 #include <limits.h>
 
-#include "quicksort.h"
+#include "insert_quicksort.h"
+
+// Helper functions.
+
+// Copies data into an element in the array.
+void element_copy(qs_t* array, int location, void const* data)
+{
+    memcpy(array->data + (location * array->data_size), data, array->data_size);
+
+    return;
+}
+
+// Swap function.
+void swap(qs_t* array, int left, int right)
+{
+    char temp[array->data_size];
+    void* left_ptr = array->data + (left * array->data_size);
+    void* right_ptr = array->data + (right * array->data_size);
+
+    memcpy(temp, left_ptr, array->data_size);
+    memcpy(left_ptr, right_ptr, array->data_size);
+    memcpy(right_ptr, temp, array->data_size);
+
+    return;
+}
 
 // Internal realloc_function.
-void* qs_realloc_clear(void* ptr, ssize_t element_size, int index, int* count_ptr)
+void* realloc_clear(void* ptr, ssize_t element_size, int index, int* count_ptr)
 {
     int current_count = *count_ptr;
     int new_count = ((index / current_count) + 1) * current_count;
@@ -26,16 +50,37 @@ void* qs_realloc_clear(void* ptr, ssize_t element_size, int index, int* count_pt
     return realloced_ptr;
 }
 
+// Initialize the quicksort array.
+qs_t* empty_quicksort_init(ssize_t data_size,
+                     int offset_primary,
+                     int offset_secondary,
+                     int (*compare)(void*, void*),
+                     void (*print)(void*))
+{
+    qs_t* array = malloc(sizeof(qs_t));
+    array->size = 0;
+    array->data_size = data_size;
+    array->allocated_size = 1;
+    array->offset_primary = offset_primary;
+    array->offset_secondary = offset_secondary;
+    array->print = print;
+    array->compare = compare;
+    array->data = malloc(data_size);
+
+    return array;
+}
+
 qs_t* quicksort_init(void* array,
-                     int size,
+                     ssize_t data_size,
                      int offset_primary,
                      int offset_secondary,
                      int (*compare)(void*, void*),
                      void (*print)(void*))
 {
     qs_t* qs_array = malloc(sizeof(qs_t));
-    qs_array->size = size;
-    qs_array->allocated_size = size;
+    qs_array->size = 0;
+    qs_array->data_size = data_size;
+    qs_array->allocated_size = 1;
     qs_array->offset_primary = offset_primary;
     qs_array->offset_secondary = offset_secondary;
     qs_array->print = print;
@@ -61,14 +106,12 @@ inline int get_size(qs_t* array)
 
 void print_array(qs_t* array)
 {
-    printf("\n");
     for(int i = 0; i < array->size; i++)
     {
-        printf("[%d]: ", i);
-        array->print(array->data[i]);
+        array->print(array->data + (i * array->data_size));
     }
 
-    printf("\n");
+    printf("Done Printing.\n");
 
     return;
 }
@@ -84,7 +127,7 @@ int add_elements(qs_t* array)
 
     for(int i = 0; i < array->size; i++)
     {
-         element_ptr = array->data[i];
+         element_ptr = array->data + (i * array->data_size);
          total += *(int*)(element_ptr + offset);
     }
     return total;
@@ -96,14 +139,14 @@ void quicksort_insert(qs_t* array, void* data)
     if(array->size == array->allocated_size)
     {
         // Might give an error.
-//        array->data = qs_realloc_clear(array->data, array->data_size, array->allocated_size * 2, array->allocated_size);
+//        array->data = realloc_clear(array->data, array->data_size, array->allocated_size * 2, array->allocated_size);
 
         // Another option
-        array->data = realloc(array->data, array->allocated_size * 2 * sizeof(void*));
+        array->data = realloc(array->data, array->allocated_size * 2 * array->data_size);
         array->allocated_size *= 2;
     }
 
-    array->data[array->size] = data;
+    memcpy(array->data + (array->size * array->data_size), data, array->data_size);
     array->size++;
 
     return;
@@ -122,11 +165,11 @@ void* quicksort_remove_end(qs_t* array)
     array->size--;
     if (array->allocated_size == ((array->allocated_size / 2) - 1))
     {
-        array->data = realloc(array->data, (array->allocated_size * 2) * sizeof(void*));
+        array->data = realloc(array->data, (array->allocated_size * 2) * array->data_size);
     }
 
     // Return element pointed at array->size.
-    return array->data[array->size - 1];
+    return array->data + ((array->size - 1) * array->data_size);
 }
 
 // Remove element at index.
@@ -137,15 +180,13 @@ void* quicksort_remove_at(qs_t* array, int index)
         return NULL;
     }
 
-    void* temp = array->data[index];
-    array->data[index] = array->data[array->size - 1];
-    array->data[array->size - 1] = temp;
+    swap(array, index, array->size);
     array->size--;
 
     // Run quicksort after removing element.
     quicksort(array, 0, (array->size - 1));
 
-    return  array->data[array->size];
+    return  array->data + (array->size * array->data_size);
 }
 
 // Return data at index.
@@ -156,7 +197,7 @@ void* quicksort_data_at(qs_t* array, int index)
         return NULL;
     }
 
-    void* location_ptr = array->data[index];
+    void* location_ptr = array->data + (index * array->data_size);
 
     return location_ptr;
 }
@@ -165,9 +206,9 @@ int compute_median(qs_t* array, int min, int max)
 {
     int mid = min + (max - min) / 2;
 
-    void* min_ptr = array->data[min];
-    void* mid_ptr = array->data[mid];
-    void* max_ptr = array->data[max];
+    void* min_ptr = array->data + (min * array->data_size);
+    void* mid_ptr = array->data + (mid * array->data_size);
+    void* max_ptr = array->data + (max * array->data_size);
 
     int offset = array->offset_primary;
     int min_val = *(int*)(min_ptr + offset);
@@ -191,7 +232,7 @@ int partition(qs_t* array, int min, int max)
 {
     int offset = array->offset_primary;
 
-    void* min_ptr = array->data[min];
+    void* min_ptr = array->data + (min * array->data_size);
     int min_val = *(int*)(min_ptr + offset);
 
     int pivot_value = min_val;
@@ -199,46 +240,35 @@ int partition(qs_t* array, int min, int max)
     int pivot_index = min + 1;
     for (int j = min + 1; j <= max; j++)
     {
-        void* temp = array->data[j];
+        void* temp = array->data + (j * array->data_size);
         int val = *(int*)(temp + offset);
 
         if (val < pivot_value)
         {
-            void* temp = array->data[j];
-            array->data[j] = array->data[pivot_index];
-            array->data[pivot_index] = temp;
+            swap(array, j, pivot_index);
             pivot_index++;
         }
     }
 
-    void* temp = array->data[min];
-    array->data[min] = array->data[pivot_index - 1];
-    array->data[pivot_index - 1] = temp;
+    swap(array, (pivot_index - 1), min);
 
     return (pivot_index - 1);
 }
 
 int quicksort(qs_t* array, int min, int max)
 {
-//    printf("Running Quicksort. Min: %d Max: %d.\n", min, max);
     if (max < min || min > max || min == max)
     {
-//        printf("Invalid Min: %d Max: %d.\n\n", min, max);
         return 0;
     }
 
     int comparisons = (max - min); // The number of comparisons is the size of the array.
 
     int median = compute_median(array, min, max);
-//    printf("Median: %d.\n", median);
 
-    void* temp = array->data[min];
-    array->data[min] = array->data[median];
-    array->data[median] = temp;
+    swap(array, median, min);
 
     int pivot = partition(array, min, max);
-
-//    printf("Pivot: %d.\n\n", pivot);
 
     comparisons += quicksort(array, min, pivot - 1);
     comparisons += quicksort(array, pivot + 1, max);
@@ -257,9 +287,7 @@ int quicksort_secondary(qs_t* array, int min, int max)
 
     int median = compute_median_secondary(array, min, max);
 
-    void* temp = array->data[min];
-    array->data[min] = array->data[median];
-    array->data[median] = temp;
+    swap(array, median, min);
 
     int pivot = partition_secondary(array, min, max);
 
@@ -274,9 +302,9 @@ int compute_median_secondary(qs_t* array, int min, int max)
     int mid = min + (max - min) / 2;
     int offset = array->offset_secondary;
 
-    void* min_ptr = array->data[min];
-    void* mid_ptr = array->data[mid];
-    void* max_ptr = array->data[max];
+    void* min_ptr = array->data + (min * array->data_size);
+    void* mid_ptr = array->data + (mid * array->data_size);
+    void* max_ptr = array->data + (max * array->data_size);
 
     int min_val = *(int*)(min_ptr + offset);
     int mid_val = *(int*)(mid_ptr + offset);
@@ -298,7 +326,7 @@ int compute_median_secondary(qs_t* array, int min, int max)
 int partition_secondary(qs_t* array, int min, int max)
 {
     int offset = array->offset_secondary;
-    void* min_ptr = array->data[min];
+    void* min_ptr = array->data + (min * array->data_size);
     int min_val = *(int*)(min_ptr + offset);
 
     int pivot_value = min_val;
@@ -306,21 +334,17 @@ int partition_secondary(qs_t* array, int min, int max)
     int pivot_index = min + 1;
     for (int j = min + 1; j <= max; j++)
     {
-        void* temp = array->data[j];
+        void* temp = array->data + (j * array->data_size);
         int val = *(int*)(temp + offset);
 
         if (val < pivot_value)
         {
-            void* temp = array->data[j];
-            array->data[j] = array->data[pivot_index];
-            array->data[pivot_index] = temp;
+            swap(array, j, pivot_index);
             pivot_index++;
         }
     }
 
-    void* temp = array->data[min];
-    array->data[min] = array->data[pivot_index - 1];
-    array->data[pivot_index - 1] = temp;
+    swap(array, (pivot_index - 1), min);
 
     return (pivot_index - 1);
 }

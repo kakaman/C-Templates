@@ -9,7 +9,7 @@ disjoint_set_t* create_disjoint_set()
 {
     disjoint_set_t* set = malloc(sizeof(disjoint_set_t));
     set->parent = NULL;
-    set->set_size = 0;
+    set->rank = 0;
 
     return set;
 }
@@ -27,12 +27,12 @@ void delete_disjoint_set(disjoint_set_t* set)
 // Attach to larger.
 void disjoint_set_union(disjoint_set_t* left, disjoint_set_t* right)
 {
-    if (left->set_size > right->set_size)
+    if (left->rank > right->rank)
     {
         right->parent = left;
         // left->set_size += right->set_size;
     }
-    else if (right->set_size > left->set_size)
+    else if (right->rank > left->rank)
     {
         left->parent = right;
         // right->set_size += left->set_size;
@@ -40,7 +40,7 @@ void disjoint_set_union(disjoint_set_t* left, disjoint_set_t* right)
     else
     {
         right->parent = left;
-        left->set_size++;
+        left->rank++;
     }
 
     return;
