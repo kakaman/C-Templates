@@ -16,7 +16,7 @@ disjoint_set_t* create_disjoint_set()
 
 void delete_disjoint_set(disjoint_set_t* set)
 {
-    set->parent = NULL;
+    set->parent = set;
     free(set);
 
     set = NULL;
@@ -27,20 +27,26 @@ void delete_disjoint_set(disjoint_set_t* set)
 // Attach to larger.
 void disjoint_set_union(disjoint_set_t* left, disjoint_set_t* right)
 {
-    if (left->rank > right->rank)
+    disjoint_set_t* left_root = disjoint_set_find(left);
+    disjoint_set_t* right_root = disjoint_set_find(right);
+
+    if(left_root == right_root)
+        return;
+
+    if (left_root->rank < right_root->rank)
     {
-        right->parent = left;
+        left_root->parent = right_root;
         // left->set_size += right->set_size;
     }
-    else if (right->rank > left->rank)
+    else if (left_root->rank > right_root->rank)
     {
-        left->parent = right;
+        right_root->parent = left_root;
         // right->set_size += left->set_size;
     }
     else
     {
-        right->parent = left;
-        left->rank++;
+        right_root->parent = left_root;
+        left_root->rank++;
     }
 
     return;
@@ -60,7 +66,7 @@ disjoint_set_t* disjoint_set_find(disjoint_set_t* set)
     return set->parent;
 }
 
-int main()
+void* disjoint_set_top(disjoint_set_t* set)
 {
-    return 1;
+
 }
