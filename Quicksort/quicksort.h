@@ -17,9 +17,7 @@ typedef struct _qs_t
     void** data;
 } qs_t;
 
-// Access Primary is the primary sort.
-// Access Secondary is the secondary sort based on a different variable.
-qs_t* empty_quicksort_init(int (*compare)(void*, void*), void (*print)(void*));
+void qs_init(qs_t* qs, void* array, int size, int (*compare)(void*, void*), void (*print)(void*));
 
 qs_t* quicksort_init(void* array, int size, int (*compare)(void*, void*), void (*print)(void*));
 

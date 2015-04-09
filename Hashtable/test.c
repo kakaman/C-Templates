@@ -10,7 +10,7 @@ static hashtable_t* hashtable;
 
 int add(int key, int value)
 {
-    int_data_t data = {key, value, 0};
+    int_hashtable_data_t data = {key, value, 0};
     printf("Adding Key: %d, Value: %d\n", key, value);
 
     return hashtable_insert(hashtable, &data);
@@ -28,7 +28,7 @@ bool lookup(int key)
     return hashtable_lookup(hashtable, key);
 }
 
-void print_data(int_data_t* data, bool stream)
+void print_data(int_hashtable_data_t* data, bool stream)
 {
     if(!stream)
     {

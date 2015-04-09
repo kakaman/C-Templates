@@ -26,19 +26,26 @@ void* qs_realloc_clear(void* ptr, ssize_t element_size, int index, int* count_pt
     return realloced_ptr;
 }
 
+void qs_init(qs_t* qs, void* array, int size, int (*compare)(void*, void*), void (*print)(void*))
+{
+    qs->size = size;
+    qs->allocated_size = size;
+    qs->print = print;
+    qs->compare = compare;
+    qs->data = array;
+
+    return;
+}
+
 qs_t* quicksort_init(void* array,
                      int size,
                      int (*compare)(void*, void*),
                      void (*print)(void*))
 {
-    qs_t* qs_array = malloc(sizeof(qs_t));
-    qs_array->size = size;
-    qs_array->allocated_size = size;
-    qs_array->print = print;
-    qs_array->compare = compare;
-    qs_array->data = array;
+    qs_t* qs = malloc(sizeof(qs_t));
+    qs_init(qs, array, size, compare, print);
 
-    return qs_array;
+    return qs;
 }
 
 

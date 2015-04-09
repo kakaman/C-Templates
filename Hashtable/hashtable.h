@@ -4,22 +4,23 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-typedef struct _int_data_t
+typedef struct _int_hashtable_data_t
 {
     int key;
     int value;
     int rev;
-} int_data_t;
+} int_hashtable_data_t;
 
-//typedef struct _char_data_t
-//{
-//    char* key;
-//    char* value;
-//    unsigned long rev;
-//} char_data_t;
+typedef struct _hashtable_data_t
+{
+    char* key;
+    void* value;
+    unsigned long rev;
+} hashtable_data_t;
 
 typedef struct _hashtable_t
 {
+    pthread_mutex_t lock;
     int size;
     int depth;
 
@@ -31,10 +32,10 @@ void hashtable_destroy(hashtable_t* hashtable);
 void hashtable_load();
 void hashtable_save();
 
-int hashtable_insert(hashtable_t* hashtable, int_data_t* data);
+int hashtable_insert(hashtable_t* hashtable, int_hashtable_data_t* data);
 bool hashtable_remove(hashtable_t* hashtable, int key);
 bool hashtable_lookup(hashtable_t* hashtable, int key);
-int_data_t hashtable_update(hashtable_t* hashtable, int_data_t* data);
+int_hashtable_data_t hashtable_update(hashtable_t* hashtable, int_hashtable_data_t* data);
 
 // Hash functions
 unsigned int get_string_hash(char const* key);
