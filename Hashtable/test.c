@@ -10,22 +10,27 @@ static hashtable_t* hashtable;
 
 void const* insert(char const* key, int score)
 {
-    return hashtable_insert(hashtable, key, strlen(key) + 1, &score, sizeof(int));
+    int key_len = strlen(key) + 1;
+    int size = sizeof(int);
+    return hashtable_insert(hashtable, key, key_len, &score, size);
 }
 
 bool remove_key(char const* key)
 {
-    return hashtable_remove(hashtable, key, strlen(key) + 1);
+    int key_len = strlen(key) + 1;
+    return hashtable_remove(hashtable, key, key_len);
 }
 
 bool lookup(char const* key)
 {
-    return hashtable_lookup(hashtable, key, strlen(key) + 1);
+    int key_len = strlen(key) + 1;
+    return hashtable_lookup(hashtable, key, key_len);
 }
 
-void const* find(char const* key)
+void const* find_value(char const* key)
 {
-    return hashtable_find(hashtable, key, strlen(key) + 1);
+    int key_len = strlen(key) + 1;
+    return hashtable_find(hashtable, key, key_len);
 }
 
 int main()
@@ -62,19 +67,30 @@ int main()
         printf("%s\n\n", ret);
     }
 
-    for(int i = num_strings - 1; i >= 0; i--)
+    for(int i = 0; i < num_strings; i++)
     {
-        bool return_val = false;
-        if( i % 2 == 0)
-            return_val = remove_key(string_array[i]);
+        bool found = false;
 
-        return_val = lookup(string_array[i]);
-        printf("Key found: %d\n", return_val);
-
-        int const* test_find = find(string_array[i]);
-        if(test_find != NULL)
-            printf("%d\n", *test_find);
+        found = lookup(string_array[i]);
+        //char* is_found = (found == 1) ? "true" : "false";
+        printf("Key found: %d\n", found);
+        int* find = find_value(string_array[i]);
+        printf("Key: %d\n",*find);
     }
+
+//    for(int i = num_strings - 1; i >= 0; i--)
+//    {
+//        bool return_val = false;
+//        if( i % 2 == 0)
+//            return_val = remove_key(string_array[i]);
+//
+//        return_val = lookup(string_array[i]);
+//        printf("Key found: %d\n", return_val);
+//
+//        int const* test_find = find(string_array[i]);
+//        if(test_find != NULL)
+//            printf("%d\n", *test_find);
+//    }
 
     return 0;
 }

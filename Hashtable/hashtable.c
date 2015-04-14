@@ -118,7 +118,9 @@ void const* list_internal_find(list_t* list, void const* key, int key_len)
         lnode_t* current_entry = (lnode_t*) current;
         if (memcmp(key, current_entry->data->bytes, key_len) == 0)
         {
-            return VALUE(current_entry->data);
+            // ToDo: Figure out where to access the data.
+            return current_entry->data->bytes + sizeof(hashtable_data_t) + ALIGN(current_entry->data->key_len);
+            //return VALUE(current_entry->data);
         }
 
         current = current->next;
@@ -218,6 +220,7 @@ hashtable_data_t* hashtable_data_create(void const* key, int key_len, void const
 
     memcpy(data->bytes, key, key_len);
     memcpy(data->bytes + (sizeof(hashtable_data_t) + ALIGN(key_len)), value, value_len);
+    // ToDo: Figure out where to access the data.
 
     return data;
 }
@@ -305,7 +308,7 @@ void const* hashtable_insert(hashtable_t* hashtable, void const* key, int key_le
     unsigned int hash = hash_function(key, key_len);
 
     void const* existing_value = internal_hashtable_insert(hashtable, entry, hash, 0);
-    if (existing_value != NULL)
+    if (existing_value == NULL)
     {
         hashtable_data_destroy(entry->data);
         free(entry);
@@ -395,7 +398,7 @@ void const* internal_hashtable_find(hashtable_t* hashtable, void const* key, int
     void* bucket = hashtable->buckets[slot];
 
     if(bucket == NULL)
-        return false;
+        return NULL;
 
     if (depth < HASH_DEPTH)
     {
