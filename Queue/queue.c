@@ -10,23 +10,30 @@
 
 #include "queue.h"
 
-queue_node_t* node_init(void* element)
+// Standard implementation of queue.
+
+queue_node_t* node_init(void* element, int data_size)
 {
     queue_node_t* node = malloc(sizeof(queue_node_t));
-    node->element = element;
+    node->element = malloc(sizeof(data_size));
+    memcpy(node->element, element, data_size);
+
     node->next = NULL;
     node->prev = NULL;
 
     return node;
 }
-// Initializes queue structure.
-void queue_init(queue_t* queue)
-{
-    queue->head = NULL;
-    queue->tail = NULL;
-    queue->size = 0;
 
-    return;
+queue_t* queue_init(void (*enumerate)(void*, void*), void (*print)(void*))
+{
+	queue_t* queue = malloc(sieof(queue_t));
+
+	queue->head = NULL;
+	queue->tail = NULL;
+	queue->size = 0;
+	queue->enumerate = enumerate;
+
+	return queue;
 }
 
 // Frees all associated memory.
@@ -68,7 +75,7 @@ void* queue_dequeue(queue_t* queue)
 }
 
 // Helper function for finding node at position.
-queue_node_t* forwards(queue_t* queue, queue_node_t* current, int position)
+queue_node_t* next_element(queue_t* queue, queue_node_t* current, int position)
 {
     if(position == 0)
     {
@@ -76,12 +83,12 @@ queue_node_t* forwards(queue_t* queue, queue_node_t* current, int position)
     }
     else
     {
-        return forwards(queue, current->next, position - 1);
+        return next_element(queue, current->next, position - 1);
     }
 }
 
 // Helper function for finding node at position.
-queue_node_t* reverse(queue_t* queue, queue_node_t* current, int position)
+queue_node_t* previous_element(queue_t* queue, queue_node_t* current, int position)
 {
     if(position == 0)
     {
@@ -89,7 +96,7 @@ queue_node_t* reverse(queue_t* queue, queue_node_t* current, int position)
     }
     else
     {
-        return forwards(queue, current->prev, position - 1);
+        return previous_element(queue, current->prev, position - 1);
     }
 }
 
@@ -105,15 +112,26 @@ void* remove_node(queue_t* queue, queue_node_t* node)
         queue->head = NULL;
         queue->tail = NULL;
 
-        return node;
+        void* element = node->element;
+        free(node);
+
+        return element;
     }
     else
     {
-        // Why is this not working?
-        node->prev->next = node->next;
-        node->next->prev = node->prev;
+        queue_node_t* prev = node->prev;
+        queue_node_t* next = node->next;
 
-        return node->element;
+        if(prev != NULL)
+        	prev->next = next;
+
+        if(next != NULL)
+        	next->prev = prev;
+
+        void* element = node->element;
+        free(node);
+
+        return element;
     }
 }
 // Removes and returns element at position. If the position is invalid, returns NULL.
@@ -131,11 +149,11 @@ void* queue_remove_at(queue_t* queue, int position)
     // Recursive calls
     if(position <= (queue->size / 2))
     {
-        node = forwards(queue, queue->head, position);
+        node = next_element(queue, queue->head, position);
     }
     else
     {
-        node = reverse(queue, queue->tail, (queue->size -1) - position); // Start from tail.
+        node = previous_element(queue, queue->tail, (queue->size -1) - position); // Start from tail.
     }
 
     return remove_node(queue, node);
@@ -152,18 +170,18 @@ void* queue_at(queue_t* queue, int position)
     }
     else if (position <= (queue->size / 2))
     {
-        node = forwards(queue, queue->head, position);
+        node = next_element(queue, queue->head, position);
     }
     else
     {
-        node = reverse(queue, queue->tail, (queue->size - 1) - position); // Start from tail.
+        node = previous_element(queue, queue->tail, (queue->size - 1) - position); // Start from tail.
     }
 
     return node->element;
 }
 
 // Stores element at the back of the queue.
-void queue_enqueue(queue_t* queue, void* element)
+void queue_enqueue(queue_t* queue, void* element, int data_size)
 {
     if(queue == NULL || element == NULL)
     {
@@ -172,7 +190,7 @@ void queue_enqueue(queue_t* queue, void* element)
     }
 
     // Allocate memory
-    queue_node_t* end = node_init(element);
+    queue_node_t* end = node_init(element, data_size);
 
     if (queue_size(queue) == 0)
     {
@@ -184,6 +202,7 @@ void queue_enqueue(queue_t* queue, void* element)
         queue->tail->next = end;
         end->prev = queue->tail;
     }
+
     queue->tail = end;
     queue->size++;
 
@@ -197,7 +216,7 @@ unsigned int queue_size(queue_t* queue)
 }
 
 // Helper function to apply operation on each element.
-void queue_iterate(queue_t* queue, void (*iter_func)(void* , void* ), void* arg)
+void queue_enumerate(queue_t* queue, void* arg)
 {
     queue_node_t* node;
     if (queue_size(queue) == 0)
@@ -208,7 +227,23 @@ void queue_iterate(queue_t* queue, void (*iter_func)(void* , void* ), void* arg)
     node = queue->head;
     while (node != NULL)
     {
-        iter_func(node->element, arg);
+        queue->enumerate(node->element, arg);
+        node = node->next;
+    }
+}
+
+void queue_print(queue_t* queue)
+{
+    queue_node_t* node;
+    if (queue_size(queue) == 0)
+    {
+        return;
+    }
+
+    node = queue->head;
+    while (node != NULL)
+    {
+        queue->print(node->element);
         node = node->next;
     }
 }

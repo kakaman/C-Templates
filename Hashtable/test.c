@@ -67,30 +67,30 @@ int main()
         printf("%s\n\n", ret);
     }
 
-    for(int i = 0; i < num_strings; i++)
-    {
-        bool found = false;
-
-        found = lookup(string_array[i]);
-        //char* is_found = (found == 1) ? "true" : "false";
-        printf("Key found: %d\n", found);
-        int* find = find_value(string_array[i]);
-        printf("Key: %d\n",*find);
-    }
-
-//    for(int i = num_strings - 1; i >= 0; i--)
+//    for(int i = 0; i < num_strings; i++)
 //    {
-//        bool return_val = false;
-//        if( i % 2 == 0)
-//            return_val = remove_key(string_array[i]);
+//        bool found = false;
 //
-//        return_val = lookup(string_array[i]);
-//        printf("Key found: %d\n", return_val);
-//
-//        int const* test_find = find(string_array[i]);
-//        if(test_find != NULL)
-//            printf("%d\n", *test_find);
+//        found = lookup(string_array[i]);
+//        //char* is_found = (found == 1) ? "true" : "false";
+//        printf("Key found: %d\n", found);
+//        int* find = find_value(string_array[i]);
+//        printf("Key: %d\n",*find);
 //    }
+
+    for(int i = num_strings - 1; i >= 0; i--)
+    {
+        bool return_val = false;
+        if( i % 2 == 0)
+            return_val = remove_key(string_array[i]);
+
+        return_val = lookup(string_array[i]);
+        printf("Key found: %d\n", return_val);
+
+        int* test_find = find_value(string_array[i]);
+        if(test_find != NULL)
+            printf("%d\n", *test_find);
+    }
 
     return 0;
 }

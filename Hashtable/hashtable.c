@@ -118,8 +118,7 @@ void const* list_internal_find(list_t* list, void const* key, int key_len)
         lnode_t* current_entry = (lnode_t*) current;
         if (memcmp(key, current_entry->data->bytes, key_len) == 0)
         {
-            // ToDo: Figure out where to access the data.
-            return current_entry->data->bytes + sizeof(hashtable_data_t) + ALIGN(current_entry->data->key_len);
+            return current_entry->data->bytes + ALIGN(current_entry->data->key_len); // FixMe: See if this works.
             //return VALUE(current_entry->data);
         }
 
@@ -219,7 +218,7 @@ hashtable_data_t* hashtable_data_create(void const* key, int key_len, void const
     data->revision = revision;
 
     memcpy(data->bytes, key, key_len);
-    memcpy(data->bytes + (sizeof(hashtable_data_t) + ALIGN(key_len)), value, value_len);
+    memcpy(data->bytes + ALIGN(key_len), value, value_len);
     // ToDo: Figure out where to access the data.
 
     return data;
