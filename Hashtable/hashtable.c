@@ -7,9 +7,66 @@
 
 #include "hashtable.h"
 
+#define BITS_SIZE 4
+#define HASH_BITS ((0x1 << BITS_SIZE) - 1)
+#define HASH_SLOTS (HASH_BITS + 1)
+#define HASH_DEPTH (((sizeof(int) * 8)/ BITS_SIZE))
+
+#define ALIGN(x) (((x) + __BIGGEST_ALIGNMENT__) & ~(__BIGGEST_ALIGNMENT__ - 1))
+
+#define VALUE(entry) (entry->bytes + ALIGN(entry->key_len))
+
 // Vyshnav Kakivaya
 
-#define modulo (unsigned int) pow(2, 32)
+// T table taken from http://en.wikipedia.org/wiki/Pearson_hashing
+static const unsigned char table_random_bytes[256] =
+{
+       98,  6, 85,150, 36, 23,112,164,135,207,169,  5, 26, 64,165,219,
+       61, 20, 68, 89,130, 63, 52,102, 24,229,132,245, 80,216,195,115,
+       90,168,156,203,177,120,  2,190,188,  7,100,185,174,243,162, 10,
+      237, 18,253,225,  8,208,172,244,255,126,101, 79,145,235,228,121,
+      123,251, 67,250,161,  0,107, 97,241,111,181, 82,249, 33, 69, 55,
+       59,153, 29,  9,213,167, 84, 93, 30, 46, 94, 75,151,114, 73,222,
+      197, 96,210, 45, 16,227,248,202, 51,152,252,125, 81,206,215,186,
+       39,158,178,187,131,136,  1, 49, 50, 17,141, 91, 47,129, 60, 99,
+      154, 35, 86,171,105, 34, 38,200,147, 58, 77,118,173,246, 76,254,
+      133,232,196,144,198,124, 53,  4,108, 74,223,234,134,230,157,139,
+      189,205,199,128,176, 19,211,236,127,192,231, 70,233, 88,146, 44,
+      183,201, 22, 83, 13,214,116,109,159, 32, 95,226,140,220, 57, 12,
+      221, 31,209,182,143, 92,149,184,148, 62,113, 65, 37, 27,106,166,
+        3, 14,204, 72, 21, 41, 56, 66, 28,193, 40,217, 25, 54,179,117,
+      238, 87,240,155,180,170,242,212,191,163, 78,218,137,194,175,110,
+       43,119,224, 71,122,142, 42,160,104, 48,247,103, 15, 11,138,239
+};
+
+// Pearson hash extended to return a 32 bit hash.
+unsigned int hash_function(void const* key, int key_len)
+{
+    union
+    {
+        unsigned int int_hash;
+        unsigned char char_hash[sizeof(unsigned int)];
+    } hash;
+
+    char const* string_key = (char const*) key;
+    for(int i = 0; i < 8; i++)
+    {
+        unsigned char h = table_random_bytes[(string_key[0] + i) % 256];
+        for(int j = 1; j < key_len; j++)
+        {
+            h = table_random_bytes[h ^ string_key[j]];
+        }
+
+        hash.char_hash[i] = h;
+    }
+
+    return hash.int_hash;
+}
+
+int get_slot(unsigned int hash, int depth)
+{
+    return (hash >> (BITS_SIZE * depth)) & HASH_BITS;
+}
 
 typedef struct _list_node_t
 {
@@ -19,80 +76,124 @@ typedef struct _list_node_t
 
 typedef struct _list_t
 {
-    pthread_mutex_t lock;
     list_node_t head;
 } list_t;
 
-typedef struct _entry_t
+typedef struct _lnode_t
 {
     list_node_t list;
-    int_hashtable_data_t data;
-} entry_t;
+    hashtable_data_t* data;
+} lnode_t;
 
 list_t* list_create()
 {
     list_t* list = malloc(sizeof(list_t));
-
-    pthread_mutex_init(&list->lock, NULL);
     list->head.next = &list->head;
     list->head.prev = &list->head;
 
     return list;
 }
 
-unsigned int get_int_hash(int key)
-{
-    unsigned int hash = key * 2654435761;
-    hash = hash % modulo;
-
-    return hash;
-}
-
-unsigned int get_string_hash(char const* key)
-{
-    int hash = 0;
-    while (*key)
-    {
-        hash = hash * 101 + *key++;
-    }
-
-    return hash;
-}
-
-int get_slot(unsigned int hash, int depth)
-{
-    return (hash >> (4 * depth)) & 0xF;
-}
-
 void list_destroy(list_t* list)
 {
-    pthread_mutex_lock(&list->lock);
     list_node_t* current = list->head.next;
     while (current != &list->head)
     {
-        entry_t* temp = (entry_t*) current;
+        lnode_t* temp = (lnode_t*) current;
         current = current->next;
 
+        hashtable_data_destroy(temp->data);
         free(temp);
     }
-
-    pthread_mutex_unlock(&list->lock);
-    pthread_mutex_destroy(&list->lock);
-
     free(list);
 
     return;
 }
 
-bool list_internal_lookup(list_t* list, int key)
+void const* list_internal_find(list_t* list, void const* key, int key_len)
 {
     list_node_t* current = list->head.next;
     while (current != &list->head)
     {
-        entry_t* current_entry = (entry_t*) current;
-        if (key == current_entry->data.key)
+        lnode_t* current_entry = (lnode_t*) current;
+        if (memcmp(key, current_entry->data->bytes, key_len) == 0)
         {
+            return VALUE(current_entry->data);
+        }
+
+        current = current->next;
+    }
+
+    return NULL;
+}
+
+bool list_internal_lookup(list_t* list, void const* key, int key_len)
+{
+    return (list_internal_find(list, key, key_len) != NULL);
+}
+
+// Returns the key if inserted. Else, returns NULL.
+void const* list_insert(list_t* list, lnode_t* entry)
+{
+    bool lookup_data = list_internal_lookup(list, entry->data->bytes, entry->data->key_len);
+    if (lookup_data == false)
+    {
+        entry->list.next = list->head.next;
+        list->head.next->prev = &entry->list;
+        entry->list.prev = &list->head;
+        list->head.next = &entry->list;
+
+        return entry->data->bytes;
+    }
+
+    return NULL;
+}
+
+bool list_remove(list_t* list, void const* key, int key_len)
+{
+    list_node_t* current = list->head.next;
+    while (current != &list->head)
+    {
+        lnode_t* current_entry = (lnode_t*) current;
+        if (memcmp(key, current_entry->data->bytes, key_len) == 0)
+        {
+            // It should always be pointing to the head.
+            current_entry->list.prev->next = current_entry->list.next;
+            current_entry->list.next->prev = current_entry->list.prev;
+
+            hashtable_data_destroy(current_entry->data);
+            free(current_entry);
+
             return true;
+        }
+    }
+
+    return false;
+}
+
+void const* list_find(list_t* list, char const* key, int key_len)
+{
+    return list_internal_find(list, key, key_len);
+}
+
+hashtable_data_t* list_update(list_t* list, hashtable_data_t* data)
+{
+    list_node_t* current = list->head.next;
+    while (current != &list->head)
+    {
+        lnode_t* current_entry = (lnode_t*) current;
+        if (memcmp(data->bytes, current_entry->data->bytes, data->key_len) == 0)
+        {
+            if (current_entry->data->revision == data->revision)
+            {
+                data->revision++;
+                hashtable_data_t* existing_data = current_entry->data;
+                current_entry->data = data;
+
+                return existing_data;
+            }
+
+            break;
         }
 
         current = current->next;
@@ -101,120 +202,53 @@ bool list_internal_lookup(list_t* list, int key)
     return false;
 }
 
-int list_insert(list_t* list, entry_t* entry)
+
+bool list_lookup(list_t* list, char const* key, int key_len)
 {
-    pthread_mutex_lock(&list->lock);
-    bool lookup_data = list_internal_lookup(list, entry->data.key);
-    if (lookup_data == false)
-    {
-        entry->list.next = list->head.next;
-        list->head.next->prev = &entry->list;
-        entry->list.prev = &list->head;
-        list->head.next = &entry->list;
-
-        return entry->data.value;
-    }
-
-    pthread_mutex_unlock(&list->lock);
-    printf("Key already exists\n");
-    return -9999999;
-}
-
-entry_t* list_remove(list_t* list, int key)
-{
-    pthread_mutex_lock(&list->lock);
-
-    entry_t* removed_entry = NULL;
-    list_node_t* current = list->head.next;
-    while (current != &list->head)
-    {
-        entry_t* current_entry = (entry_t*) current;
-        if (key == current_entry->data.key)
-        {
-            // It should always be pointing to the head.
-            current_entry->list.prev->next = current_entry->list.next;
-            current_entry->list.next->prev = current_entry->list.prev;
-
-            removed_entry = current_entry;
-            break;
-        }
-    }
-
-    pthread_mutex_unlock(&list->lock);
-
-    return removed_entry;
-}
-
-bool list_lookup(list_t* list, int key)
-{
-    pthread_mutex_lock(&list->lock);
-
-    bool found_data = list_internal_lookup(list, key);
-
-    pthread_mutex_unlock(&list->lock);
-
+    bool found_data = list_internal_lookup(list, key, key_len);
     return found_data;
 }
 
-//int_data_t revision_conflict_value = { NULL, NULL, 0 };
-//int_data_t* revision_conflict_data = &revision_conflict_value;
-
-int_hashtable_data_t list_update(list_t* list, int_hashtable_data_t* data)
+hashtable_data_t* hashtable_data_create(void const* key, int key_len, void const* value, int value_len, unsigned long long revision)
 {
-    int_hashtable_data_t updated_data = { data->key, data->value, 0};
+    hashtable_data_t* data = malloc(sizeof(hashtable_data_t) + ALIGN(key_len) + value_len);
+    data->key_len = key_len;
+    data->value_len = value_len;
+    data->revision = revision;
 
-    pthread_mutex_lock(&list->lock);
+    memcpy(data->bytes, key, key_len);
+    memcpy(data->bytes + (sizeof(hashtable_data_t) + ALIGN(key_len)), value, value_len);
 
-    list_node_t* current = list->head.next;
-    while (current != &list->head)
-    {
-        entry_t* current_entry = (entry_t*) current;
-        if (data->key == current_entry->data.key)
-        {
-            if (current_entry->data.rev == data->rev)
-            {
-                current_entry->data.value = data->value;
-                current_entry->data.rev++;
-                updated_data.rev = current_entry->data.rev;
-                break;
-            }
-
-            updated_data.rev = -1;
-            break;
-        }
-
-        current = current->next;
-    }
-
-    pthread_mutex_unlock(&list->lock);
-
-    return updated_data;
+    return data;
 }
 
-hashtable_t* internal_hashtable_create(unsigned int size, int depth)
+void hashtable_data_destroy(hashtable_data_t* data)
 {
-    hashtable_t* hash_table = (hashtable_t*) malloc(sizeof(hashtable_t) + sizeof(hashtable_t*) * size);
+    free(data);
 
-    pthread_mutex_init(&hash_table->lock, NULL);
-    hash_table->size = size;
+    return;
+}
+
+hashtable_t* internal_hashtable_create(int depth)
+{
+    hashtable_t* hash_table = (hashtable_t*) malloc(sizeof(hashtable_t) + sizeof(hashtable_t*) * HASH_SLOTS);
+
     hash_table->depth = depth;
-    memset(hash_table->buckets, 0, sizeof(hashtable_t*) * size);
+    memset(hash_table->buckets, 0, sizeof(hashtable_t*) * HASH_SLOTS);
 
     return hash_table;
 }
 
 hashtable_t* hashtable_create()
 {
-    return internal_hashtable_create(16, 0);
+    return internal_hashtable_create(0);
 }
 
 void hashtable_destroy(hashtable_t* hashtable)
 {
-    pthread_mutex_lock(&hashtable->lock);
-
-    if (hashtable->depth < 8)
+    if (hashtable->depth < HASH_DEPTH)
     {
-        for (int i = 0; i < hashtable->size; i++)
+        for (int i = 0; i < HASH_SLOTS; i++)
         {
             if (hashtable->buckets[i] != NULL)
                 hashtable_destroy(hashtable->buckets[i]);
@@ -222,34 +256,28 @@ void hashtable_destroy(hashtable_t* hashtable)
     }
     else
     {
-        for (int i = 0; i < hashtable->size; i++)
+        for (int i = 0; i < HASH_SLOTS; i++)
         {
             if (hashtable->buckets[i] != NULL)
                 list_destroy(hashtable->buckets[i]);
         }
     }
 
-    pthread_mutex_unlock(&hashtable->lock);
-
-    pthread_mutex_destroy(&hashtable->lock);
-
     free(hashtable);
 
     return;
 }
 
-int internal_hashtable_insert(hashtable_t* hashtable, entry_t* entry, unsigned int hash, int depth)
+void const* internal_hashtable_insert(hashtable_t* hashtable, lnode_t* entry, unsigned int hash, unsigned int depth)
 {
     int slot = get_slot(hash, depth);
-
-    pthread_mutex_lock(&hashtable->lock);
 
     void* bucket = hashtable->buckets[slot];
     if (bucket == NULL)
     {
-        if (depth < 8)
+        if (depth < HASH_DEPTH)
         {
-            bucket = internal_hashtable_create(16, depth + 1);
+            bucket = internal_hashtable_create(depth + 1);
         }
         else
         {
@@ -259,274 +287,127 @@ int internal_hashtable_insert(hashtable_t* hashtable, entry_t* entry, unsigned i
         hashtable->buckets[slot] = bucket;
     }
 
-    pthread_mutex_unlock(&hashtable->lock);
-
-    int existing_value = -9999999;
-    if (depth < 8)
+    if (depth < HASH_DEPTH)
     {
-        existing_value = internal_hashtable_insert(bucket, entry, hash, depth + 1);
-    }
-    else
-    {
-        existing_value = list_insert(bucket, entry);
+        return internal_hashtable_insert(bucket, entry, hash, depth + 1);
     }
 
-    return existing_value;
+    return list_insert(bucket, entry);
 }
 
-int hashtable_insert(hashtable_t* hashtable, int_hashtable_data_t* data)
+void const* hashtable_insert(hashtable_t* hashtable, void const* key, int key_len, void const* value, int value_len)
 {
-    entry_t* entry = malloc(sizeof(entry_t));
+    lnode_t* entry = malloc(sizeof(lnode_t));
     entry->list.next = NULL;
     entry->list.prev = NULL;
-    entry->data.key = data->key;
-    entry->data.value = data->value;
-    entry->data.rev = data->rev;
+    entry->data = hashtable_data_create(key, key_len, value, value_len, 0);
 
-    unsigned int hash = get_int_hash(data->key);
+    unsigned int hash = hash_function(key, key_len);
 
-    int existing_value = internal_hashtable_insert(hashtable, entry, hash, 0);
-
-    if (existing_value == -9999999)
+    void const* existing_value = internal_hashtable_insert(hashtable, entry, hash, 0);
+    if (existing_value != NULL)
     {
+        hashtable_data_destroy(entry->data);
         free(entry);
     }
 
     return existing_value;
 }
 
-bool internal_hashtable_remove(hashtable_t* hashtable, int key, unsigned int hash, int depth)
+bool internal_hashtable_remove(hashtable_t* hashtable, void const* key, int key_len, unsigned int hash, unsigned int depth)
 {
     int slot = get_slot(hash, depth);
-
-    pthread_mutex_lock(&hashtable->lock);
-
     void* bucket = hashtable->buckets[slot];
-
-    pthread_mutex_unlock(&hashtable->lock);
-
 
     if (bucket == NULL)
         return NULL;
 
-    bool is_removed;
-    if (depth < 8)
+    if (depth < HASH_DEPTH)
     {
-        is_removed = internal_hashtable_remove(bucket, key, hash, depth + 1);
-    }
-    else
-    {
-        entry_t* existing_entry = list_remove(bucket, key);
-
-        if(existing_entry != NULL)
-            free(existing_entry);
-
-        is_removed = true;
+        return internal_hashtable_remove(bucket, key, key_len, hash, depth + 1);
     }
 
-    return is_removed;
+    return list_remove(bucket, key, key_len);
 }
 
-bool hashtable_remove(hashtable_t* hashtable, int key)
+bool hashtable_remove(hashtable_t* hashtable, void const* key, int key_len)
 {
-    unsigned int hash = get_int_hash(key);
+    unsigned int hash = hash_function(key, key_len);
 
-    return internal_hashtable_remove(hashtable, key, hash, 0);
+    return internal_hashtable_remove(hashtable, key, key_len, hash, 0);
 }
 
-bool internal_hashtable_lookup(hashtable_t* hashtable, int key, unsigned int hash, int depth)
+bool internal_hashtable_lookup(hashtable_t* hashtable, char const* key, int key_len, unsigned int hash, unsigned int depth)
 {
     int slot = get_slot(hash, depth);
-
-    pthread_mutex_lock(&hashtable->lock);
-
     void* bucket = hashtable->buckets[slot];
-
-    pthread_mutex_unlock(&hashtable->lock);
 
     if(bucket == NULL)
         return false;
 
-    bool found_entry = false;
-    if (depth < 8)
+    if (depth < HASH_DEPTH)
     {
-        found_entry = internal_hashtable_lookup(bucket, key, hash, depth + 1);
-    }
-    else
-    {
-        found_entry = list_lookup(bucket, key);
+        return internal_hashtable_lookup(bucket, key, key_len, hash, depth + 1);
     }
 
-    return found_entry;
+    return list_lookup(bucket, key, key_len);
 }
 
-bool hashtable_lookup(hashtable_t* hashtable, int key)
+bool hashtable_lookup(hashtable_t* hashtable, void const* key, int key_len)
 {
-    unsigned int hash = get_int_hash(key);
+    unsigned int hash = hash_function(key, key_len);
 
-    return internal_hashtable_lookup(hashtable, key, hash, 0);
+    return internal_hashtable_lookup(hashtable, key, key_len, hash, 0);
 }
 
-int_hashtable_data_t internal_hashtable_update(hashtable_t* hashtable, int_hashtable_data_t* data, unsigned int hash, int depth)
+hashtable_data_t* internal_hashtable_update(hashtable_t* hashtable, hashtable_data_t* data, unsigned int hash, unsigned int depth)
 {
     int slot = get_slot(hash, depth);
-
-    pthread_mutex_lock(&hashtable->lock);
-
     void* bucket = hashtable->buckets[slot];
 
-    pthread_mutex_unlock(&hashtable->lock);
-
     if (bucket == NULL)
+        return NULL;
+
+    if (depth < HASH_DEPTH)
     {
-        int_hashtable_data_t ret_val = { data->key, data->value, 0 };
-        return ret_val;
+        return internal_hashtable_update(bucket, data, hash, depth + 1);
     }
 
-    int_hashtable_data_t existing_entry;
-    if (depth < 8)
-    {
-        existing_entry = internal_hashtable_update(bucket, data, hash, depth + 1);
-    }
-    else
-    {
-        existing_entry = list_update(bucket, data);
-    }
-
-    return existing_entry;
+    return list_update(bucket, data);
 }
 
-int_hashtable_data_t hashtable_update(hashtable_t* hashtable, int_hashtable_data_t* data)
+bool hashtable_update(hashtable_t* hashtable, void const* key, int key_len, void const* value, int value_len, int revision)
 {
-    unsigned int hash = get_int_hash(data->key);
+    unsigned int hash = hash_function(key, key_len);
+    hashtable_data_t* data = hashtable_data_create(key, key_len, value, value_len, revision);
 
-    return internal_hashtable_update(hashtable, data, hash, 0);
+    hashtable_data_t* existing_data = internal_hashtable_update(hashtable, data, hash, 0);
+
+    bool found = (existing_data != NULL);
+    hashtable_data_destroy(existing_data);
+
+    return found;
 }
 
-//void list_save(list_t* list, FILE* fd)
-//{
-//    list_node_t* current = list->head.next;
-//    while (current != &list->head)
-//    {
-//        entry_t* temp = (entry_t*) current;
-//        current = current->next;
-//
-//        fprintf(fd, "%s : %s : %ld\n", temp->data.key, temp->data.value, temp->data.rev);
-//
-//        free(temp->data.key);
-//        free(temp->data.value);
-//        free(temp);
-//    }
-//
-//    free(list);
-//
-//    return;
-//}
-
-//void internal_hashtable_save(hashtable_t* hashtable, FILE* fd)
-//{
-//    int i;
-//    if (hashtable->depth < 8)
-//    {
-//        for (i = 0; i < hashtable->size; i++)
-//        {
-//            if (hashtable->buckets[i] != NULL)
-//                internal_hashtable_save(hashtable->buckets[i], fd);
-//        }
-//    }
-//    else
-//    {
-//        for (i = 0; i < hashtable->size; i++)
-//        {
-//            if (hashtable->buckets[i] != NULL)
-//                list_save(hashtable->buckets[i], fd);
-//        }
-//    }
-//
-//    free(hashtable);
-//
-//    return;
-//}
-//
-//void hashtable_save(hashtable_t* hashtable)
-//{
-//    FILE* fd = fopen("./data/table.dat", "w");
-//    if (fd == NULL)
-//    {
-//        perror("fopen failed");
-//        exit(-1);
-//    }
-//    internal_hashtable_save(hashtable, fd);
-//
-//    fclose(fd);
-//
-//    return;
-//}
-//
-//void hashtable_load(hashtable_t* hashtable)
-//{
-//    FILE* fd = fopen("./data/table.dat", "a+");
-//    if (fd == NULL)
-//    {
-//        perror("fopen failed");
-//        exit(-1);
-//    }
-//
-//    char key[256], value[256];
-//    unsigned long rev;
-//
-//    do
-//    {
-//        int count = fscanf(fd, "%s : %s : %ld\n", key, value, &rev);
-//        if (count == EOF)
-//            break;
-//
-//        int_data_t data = { key, value, rev };
-//        hashtable_insert(hashtable, &data);
-//
-//    } while (1);
-//
-//    fclose(fd);
-//
-//    return;
-//}
-
-void list_print(list_t* list)
+void const* internal_hashtable_find(hashtable_t* hashtable, void const* key, int key_len, unsigned int hash, unsigned int depth)
 {
-     list_node_t* current = list->head.next;
-     while (current != &list->head)
-     {
-         entry_t* temp = (entry_t*) current;
-         current = current->next;
-         printf("%d : %d : %d\n", temp->data.key, temp->data.value, temp->data.rev);
-     }
+    int slot = get_slot(hash, depth);
+    void* bucket = hashtable->buckets[slot];
 
-     return;
-}
+    if(bucket == NULL)
+        return false;
 
-void internal_hashtable_print(hashtable_t* hashtable)
-{
-    if (hashtable->depth < 8)
+    if (depth < HASH_DEPTH)
     {
-        for (int i = 0; i < hashtable->size; i++)
-        {
-            if (hashtable->buckets[i] != NULL)
-                internal_hashtable_print(hashtable->buckets[i]);
-        }
-    }
-    else
-    {
-        for (int i = 0; i < hashtable->size; i++)
-        {
-            if (hashtable->buckets[i] != NULL)
-                list_print(hashtable->buckets[i]);
-        }
+        return internal_hashtable_find(bucket, key, key_len, hash, depth + 1);
     }
 
-    return;
+    return list_find(bucket, key, key_len);
 }
 
-void hashtable_print(hashtable_t* hashtable)
+void const* hashtable_find(hashtable_t* hashtable, void const* key, int key_len)
 {
-    internal_hashtable_print(hashtable);
+    unsigned int hash = hash_function(key, key_len);
+
+    return internal_hashtable_find(hashtable, key, key_len, hash, 0);
 }
