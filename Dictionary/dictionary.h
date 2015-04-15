@@ -25,7 +25,6 @@ typedef struct _dictionary_entry_t
 
     dictionary_entry_t* left;
     dictionary_entry_t* right;
-    // dictionary_entry_t* parent;
 } dictionary_entry_t;
 
 // Dictionary struct

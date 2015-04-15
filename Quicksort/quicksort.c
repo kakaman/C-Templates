@@ -1,8 +1,8 @@
 /*
- * void_quicksort.c
+ * quicksort.c
  *
  *  Created on: Mar 18, 2015
- *      Author: vyshnav
+ *      Author: Vyshnav Kakivaya
  */
 
 #include <stdio.h>
@@ -13,32 +13,8 @@
 
 #include "quicksort.h"
 
-// Helper functions.
-
-// Copies data into an element in the array.
-void element_copy(qs_t* array, int location, void const* data)
-{
-    memcpy(array->data + (location * array->data_size), data, array->data_size);
-
-    return;
-}
-
-// Swap function.
-void swap(qs_t* array, int left, int right)
-{
-    char temp[array->data_size];
-    void* left_ptr = array->data + (left * array->data_size);
-    void* right_ptr = array->data + (right * array->data_size);
-
-    memcpy(temp, left_ptr, array->data_size);
-    memcpy(left_ptr, right_ptr, array->data_size);
-    memcpy(right_ptr, temp, array->data_size);
-
-    return;
-}
-
 // Internal realloc_function.
-void* realloc_clear(void* ptr, ssize_t element_size, int index, int* count_ptr)
+void* qs_realloc_clear(void* ptr, ssize_t element_size, int index, int* count_ptr)
 {
     int current_count = *count_ptr;
     int new_count = ((index / current_count) + 1) * current_count;
@@ -50,21 +26,28 @@ void* realloc_clear(void* ptr, ssize_t element_size, int index, int* count_ptr)
     return realloced_ptr;
 }
 
-// Initialize the quicksort array.
-qs_t* quicksort_init(ssize_t data_size, int (*compare)(void*, void*), int (*access_primary)(void*), int (*access_secondary)(void*), void (*print)(void*))
+void qs_init(qs_t* qs, void* array, int size, int (*compare)(void*, void*), void (*print)(void*))
 {
-    qs_t* array = malloc(sizeof(qs_t));
-    array->size = 0;
-    array->data_size = data_size;
-    array->print = print;
-    array->compare = compare;
-    array->access_primary = access_primary;
-    array->access_secondary = access_secondary;
-    array->allocated_size = 1;
-    array->data = malloc(data_size);
+    qs->size = size;
+    qs->allocated_size = size;
+    qs->print = print;
+    qs->compare = compare;
+    qs->data = array;
 
-    return array;
+    return;
 }
+
+qs_t* quicksort_init(void* array,
+                     int size,
+                     int (*compare)(void*, void*),
+                     void (*print)(void*))
+{
+    qs_t* qs = malloc(sizeof(qs_t));
+    qs_init(qs, array, size, compare, print);
+
+    return qs;
+}
+
 
 void clear_quicksort(qs_t* array)
 {
@@ -81,30 +64,16 @@ inline int get_size(qs_t* array)
 
 void print_array(qs_t* array)
 {
+    printf("\n");
     for(int i = 0; i < array->size; i++)
     {
-        array->print(array->data + (i * array->data_size));
+        printf("[%d]: ", i);
+        array->print(array->data[i]);
     }
 
-    printf("Done Printing.\n");
+    printf("\n");
 
     return;
-}
-
-int add_elements(qs_t* array)
-{
-    if(array == NULL)
-        return -1;
-
-    void* element_ptr = NULL;
-    int total = 0;
-
-    for(int i = 0; i < array->size; i++)
-    {
-         element_ptr = array->data + (i * array->data_size);
-         total += array->access_primary(element_ptr);
-    }
-    return total;
 }
 
 // Insert element into the quicksort array.
@@ -113,14 +82,14 @@ void quicksort_insert(qs_t* array, void* data)
     if(array->size == array->allocated_size)
     {
         // Might give an error.
-//        array->data = realloc_clear(array->data, array->data_size, array->allocated_size * 2, array->allocated_size);
+//        array->data = qs_realloc_clear(array->data, array->data_size, array->allocated_size * 2, array->allocated_size);
 
         // Another option
-        array->data = realloc(array->data, array->allocated_size * 2 * array->data_size);
+        array->data = realloc(array->data, array->allocated_size * 2 * sizeof(void*));
         array->allocated_size *= 2;
     }
 
-    memcpy(array->data + (array->size * array->data_size), data, array->data_size);
+    array->data[array->size] = data;
     array->size++;
 
     return;
@@ -139,11 +108,11 @@ void* quicksort_remove_end(qs_t* array)
     array->size--;
     if (array->allocated_size == ((array->allocated_size / 2) - 1))
     {
-        array->data = realloc(array->data, (array->allocated_size * 2) * array->data_size);
+        array->data = realloc(array->data, (array->allocated_size * 2) * sizeof(void*));
     }
 
     // Return element pointed at array->size.
-    return array->data + ((array->size - 1) * array->data_size);
+    return array->data[array->size - 1];
 }
 
 // Remove element at index.
@@ -154,13 +123,15 @@ void* quicksort_remove_at(qs_t* array, int index)
         return NULL;
     }
 
-    swap(array, index, array->size);
+    void* temp = array->data[index];
+    array->data[index] = array->data[array->size - 1];
+    array->data[array->size - 1] = temp;
     array->size--;
 
     // Run quicksort after removing element.
     quicksort(array, 0, (array->size - 1));
 
-    return  array->data + (array->size * array->data_size);
+    return  array->data[array->size];
 }
 
 // Return data at index.
@@ -171,7 +142,7 @@ void* quicksort_data_at(qs_t* array, int index)
         return NULL;
     }
 
-    void* location_ptr = array->data + (index * array->data_size);
+    void* location_ptr = array->data[index];
 
     return location_ptr;
 }
@@ -180,22 +151,23 @@ int compute_median(qs_t* array, int min, int max)
 {
     int mid = min + (max - min) / 2;
 
-    void* min_ptr = array->data + (min * array->data_size);
-    void* mid_ptr = array->data + (mid * array->data_size);
-    void* max_ptr = array->data + (max * array->data_size);
+    void* min_ptr = array->data[min];
+    void* mid_ptr = array->data[mid];
+    void* max_ptr = array->data[max];
 
-    int min_val = array->access_primary(min_ptr);
-    int mid_val = array->access_primary(mid_ptr);
-    int max_val = array->access_primary(max_ptr);
+    int min_mid = array->compare(min_ptr, mid_ptr); // Returns 1 if min is larger than min. -1 if smaller.
+    int mid_max = array->compare(mid_ptr, max_ptr); // Returns 1 if mid is larger than max. -1 if smaller.
+    int min_max = array->compare(min_ptr, max_ptr); // Returns 1 if min is larger than max. -1 if smaller.
 
-    if((min_val <= mid_val && min_val >= max_val) || (min_val >= mid_val && min_val <= max_val))
-    {
-         return min;
-    }
-
-    if((mid_val <= min_val && mid_val >= max_val) || (mid_val >= min_val && mid_val <= max_val))
+    // if((mid >= max && mid <= min) || (mid >= min && mid <= max)
+    if((mid_max >=0 && min_mid >= 0) || (min_mid <= 0 && mid_max <= 0))
     {
         return mid;
+    }
+    // if((min <= mid && min >= max) || min >= mid && min <= max)
+    else if((min_mid <= 0 && min_max >= 0) || (min_mid >= 0 && min_max <= 0))
+    {
+         return min;
     }
 
     return max;
@@ -203,25 +175,25 @@ int compute_median(qs_t* array, int min, int max)
 
 int partition(qs_t* array, int min, int max)
 {
-    void* min_ptr = array->data + (min * array->data_size);
-    int min_val = array->access_primary(min_ptr);
-
-    int pivot_value = min_val;
+    void* min_ptr = array->data[min];
 
     int pivot_index = min + 1;
     for (int j = min + 1; j <= max; j++)
     {
-        void* temp = array->data + (j * array->data_size);
-        int val = array->access_primary(temp);
-
-        if (val < pivot_value)
+        void* temp = array->data[j];
+        int comp = array->compare(min_ptr, temp);
+        if (comp == 1)
         {
-            swap(array, j, pivot_index);
+            void* temp = array->data[j];
+            array->data[j] = array->data[pivot_index];
+            array->data[pivot_index] = temp;
             pivot_index++;
         }
     }
 
-    swap(array, (pivot_index - 1), min);
+    void* temp = array->data[min];
+    array->data[min] = array->data[pivot_index - 1];
+    array->data[pivot_index - 1] = temp;
 
     return (pivot_index - 1);
 }
@@ -230,6 +202,7 @@ int quicksort(qs_t* array, int min, int max)
 {
     if (max < min || min > max || min == max)
     {
+
         return 0;
     }
 
@@ -237,7 +210,9 @@ int quicksort(qs_t* array, int min, int max)
 
     int median = compute_median(array, min, max);
 
-    swap(array, median, min);
+    void* temp = array->data[min];
+    array->data[min] = array->data[median];
+    array->data[median] = temp;
 
     int pivot = partition(array, min, max);
 
@@ -245,75 +220,4 @@ int quicksort(qs_t* array, int min, int max)
     comparisons += quicksort(array, pivot + 1, max);
 
     return comparisons;
-}
-
-int quicksort_secondary(qs_t* array, int min, int max)
-{
-    if (max < min || min > max || min == max)
-    {
-        return 0;
-    }
-
-    int comparisons = (max - min); // The number of comparisons is the size of the array.
-
-    int median = compute_median_secondary(array, min, max);
-
-    swap(array, median, min);
-
-    int pivot = partition_secondary(array, min, max);
-
-    comparisons += quicksort_secondary(array, min, pivot - 1);
-    comparisons += quicksort_secondary(array, pivot + 1, max);
-
-    return comparisons;
-}
-
-int compute_median_secondary(qs_t* array, int min, int max)
-{
-    int mid = min + (max - min) / 2;
-
-    void* min_ptr = array->data + (min * array->data_size);
-    void* mid_ptr = array->data + (mid * array->data_size);
-    void* max_ptr = array->data + (max * array->data_size);
-
-    int min_val = array->access_secondary(min_ptr);
-    int mid_val = array->access_secondary(mid_ptr);
-    int max_val = array->access_secondary(max_ptr);
-
-    if((min_val <= mid_val && min_val >= max_val) || (min_val >= mid_val && min_val <= max_val))
-    {
-         return min;
-    }
-
-    if((mid_val <= min_val && mid_val >= max_val) || (mid_val >= min_val && mid_val <= max_val))
-    {
-        return mid;
-    }
-
-    return max;
-}
-
-int partition_secondary(qs_t* array, int min, int max)
-{
-    void* min_ptr = array->data + (min * array->data_size);
-    int min_val = array->access_secondary(min_ptr);
-
-    int pivot_value = min_val;
-
-    int pivot_index = min + 1;
-    for (int j = min + 1; j <= max; j++)
-    {
-        void* temp = array->data + (j * array->data_size);
-        int val = array->access_secondary(temp);
-
-        if (val < pivot_value)
-        {
-            swap(array, j, pivot_index);
-            pivot_index++;
-        }
-    }
-
-    swap(array, (pivot_index - 1), min);
-
-    return (pivot_index - 1);
 }

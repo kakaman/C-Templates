@@ -8,54 +8,89 @@
 
 static hashtable_t* hashtable;
 
-int add(int key, int value)
+void const* insert(char const* key, int score)
 {
-    int_data_t data = {key, value, 0};
-    printf("Adding Key: %d, Value: %d\n", key, value);
-
-    return hashtable_insert(hashtable, &data);
+    int key_len = strlen(key) + 1;
+    int size = sizeof(int);
+    return hashtable_insert(hashtable, key, key_len, &score, size);
 }
 
-bool remove_key(int key)
+bool remove_key(char const* key)
 {
-    printf("Removing Key: %d, Value: %d\n", key, key);
-    return hashtable_remove(hashtable, key);
+    int key_len = strlen(key) + 1;
+    return hashtable_remove(hashtable, key, key_len);
 }
 
-bool lookup(int key)
+bool lookup(char const* key)
 {
-    printf("Lookup Key: %d, Value: %d\n", key, key);
-    return hashtable_lookup(hashtable, key);
+    int key_len = strlen(key) + 1;
+    return hashtable_lookup(hashtable, key, key_len);
 }
 
-void print_data(int_data_t* data, bool stream)
+void const* find_value(char const* key)
 {
-    if(!stream)
-    {
-        printf("Key: %d, Value: %d\n", data->key, data->value);
-    }
-
-    else
-    {
-        printf("(Key: %d, Value: %d) ", data->key, data->value);
-    }
-
-    return;
+    int key_len = strlen(key) + 1;
+    return hashtable_find(hashtable, key, key_len);
 }
 
 int main()
 {
     hashtable = hashtable_create();
 
-    add(1,1);
-    add(2,2);
-    add(3,3);
-    bool found = lookup(1);
-    printf("\nFound: %d\n", found);
-    found = lookup(3);
-    printf("Found: %d\n", found);
-    found = lookup(4);
-    printf("Found: %d\n", found);
+    char** string_array = NULL;
 
-    return 1;
+    char * line = NULL;
+    size_t len = 0;
+    ssize_t read;
+
+    FILE* file = fopen("string_list.txt", "r");
+
+    read = getline(&line, &len, file);
+    int num_strings = 0;
+    int count = 0;
+    sscanf(line, "%d", &num_strings);
+
+    string_array = malloc(sizeof(char*) * num_strings);
+    while ((read = getline(&line, &len, file)) != -1)
+    {
+        string_array[count] = strdup(line);
+        count++;
+    }
+
+    free(line);
+    fclose(file);
+
+    for(int i = 0; i < num_strings; i++)
+    {
+        printf("Score: %d \nRanking: %d\n", i, i);
+        char const* ret = insert(string_array[i], i);
+        printf("%s\n\n", ret);
+    }
+
+//    for(int i = 0; i < num_strings; i++)
+//    {
+//        bool found = false;
+//
+//        found = lookup(string_array[i]);
+//        //char* is_found = (found == 1) ? "true" : "false";
+//        printf("Key found: %d\n", found);
+//        int* find = find_value(string_array[i]);
+//        printf("Key: %d\n",*find);
+//    }
+
+    for(int i = num_strings - 1; i >= 0; i--)
+    {
+        bool return_val = false;
+        if( i % 2 == 0)
+            return_val = remove_key(string_array[i]);
+
+        return_val = lookup(string_array[i]);
+        printf("Key found: %d\n", return_val);
+
+        int* test_find = find_value(string_array[i]);
+        if(test_find != NULL)
+            printf("%d\n", *test_find);
+    }
+
+    return 0;
 }
