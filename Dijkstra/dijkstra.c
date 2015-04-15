@@ -6,8 +6,9 @@
 #include "graph.h"
 #include "heap.h"
 
-// Naive implementation of Dijkstra's shortest path algorithm. Use Prim's algorithm for a more efficient version.
-#define INFINITY 1000000
+#define INFINITY INT_MAX
+#define INVALID -3
+#define UNKNOWN -1
 
 graph_t* parse_graph()
 {
@@ -78,22 +79,24 @@ void dijkstra_print_data(void const* ptr)
     return;
 }
 
+// Naive implementation of Dijkstra's shortest path algorithm. Use Prim's algorithm for a more efficient version.
 void dijkstra_array(graph_t* graph, int source)
 {
-    int distance[graph->num_vertices];
-    bool visited[graph->num_vertices];
-    int via[graph->num_vertices];
-    int current_vertex = source - 1;
+    int num_vertices = graph->num_vertices;
+    int num_edges = graph->num_edges;
+    int current_vertex = source;
 
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        distance[i] = INFINITY;
-        via[i] = -1;
-        visited[i] = false;
-    }
-
+    int* distance = malloc(sizeof(int) * num_vertices);
+    memset(distance, INFINITY, sizeof(int) * num_vertices);
     distance[current_vertex] = 0;
+
+    int* via = malloc(sizeof(int) * num_vertices);
+    memset(via, INVALID, sizeof(int) * num_vertices);
     via[current_vertex] = 0;
+
+    bool visited = malloc(sizeof(bool) * num_vertices);
+    memset(via, false, sizeof(bool) * num_vertices);
+
     while(visited[current_vertex] == false)
     {
         visited[current_vertex] = true;
@@ -134,7 +137,6 @@ void dijkstra_array(graph_t* graph, int source)
 
 graph_t* dijkstra_min_heap(graph_t* graph, int source_vertex_index)
 {
-
     // Initialize the Heap.
     int location_offset = offsetof(vertex_t, heap_element.heap_index);
     heap_t* heap = heap_init(location_offset, dijkstra_min_data, dijkstra_find, dijkstra_print_data);
