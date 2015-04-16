@@ -58,20 +58,29 @@ void bellman_ford(graph_t* graph, int source_index, int expected)
     int num_vertices = graph->num_vertices;
     int num_edges = graph->num_edges;
 
+    print_graph(graph);
+    graph_t* shortest_path = graph_init();
+
     // Step 1: Initialize the graph.
     int* distance = malloc(sizeof(int) * num_vertices);
-    memset(distance, INFINITY, sizeof(int) * num_vertices);
+    int* via = malloc(sizeof(int) * num_vertices);
+    for(int i = 0; i < num_vertices; i++)
+    {
+        distance[i] = INFINITY;
+        via[i] = INVALID;
+    }
     distance[source_index] = 0;
 
-    int* via = malloc(sizeof(int) * num_vertices);
-    memset(via, INVALID, sizeof(int) * num_vertices);
+
 
     // Step 2: Relax edges repeatedly.
     for(int i = 0; i < num_vertices; i++)
     {
-        for(int edge_index = 0; edge_index < num_edges; edge_index++)
+        int source = i;
+
+        for(int edge_index = 0; edge_index < graph->vertices[source]->out_degree; edge_index++)
         {
-            edge_t* edge = graph->edges[edge_index];
+            edge_t* edge = graph->vertices[source]->out_edges[edge_index];
             int source = edge->src->index;
             int destination = edge->dest->index;
             int weight = edge->weight;
@@ -80,6 +89,8 @@ void bellman_ford(graph_t* graph, int source_index, int expected)
             {
                 distance[destination] = distance[source] + weight;
                 via[destination] = source;
+
+                add_directed_edge(shortest_path, source + 1, destination + 1, weight);
             }
         }
     }
@@ -102,6 +113,9 @@ void bellman_ford(graph_t* graph, int source_index, int expected)
 
     printf("Expected: %d\n", expected);
     printf("Received: %d\n", negative_cycles);
+
+    printf("Shortest path graph:\n");
+    print_graph(shortest_path);
 
     free(distance);
     free(via);
@@ -137,70 +151,84 @@ graph_t* parse(char* str)
 int main()
 {
     time_t now, end;
-    graph_t* graph = parse("g1.txt");
+
+    graph_t* graph = parse("test.txt");
 
     time(&now);
 
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        bellman_ford(graph, i, UNKNOWN);
-    }
+    bellman_ford(graph, 0, 98);
 
     time(&end);
     double seconds = difftime(end, now);
-    printf("Bellman-Ford on g1.txt:\n");
+    printf("Bellman-Ford on test.txt:\n");
     printf("Ran for %.f seconds.\n\n", seconds);
 
     graph_delete(graph);
 
-    graph = parse("g2.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        bellman_ford(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Bellman-Ford on g2.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
-
-    graph = parse("g3.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        bellman_ford(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Bellman-Ford on g3.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
-
-
-    graph = parse("large.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        bellman_ford(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Bellman-Ford on large.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
+//    graph_t* graph = parse("g1.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        bellman_ford(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Bellman-Ford on g1.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//    graph = parse("g2.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        bellman_ford(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Bellman-Ford on g2.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//    graph = parse("g3.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        bellman_ford(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Bellman-Ford on g3.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//
+//    graph = parse("large.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        bellman_ford(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Bellman-Ford on large.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
 
     return 1;
 }
