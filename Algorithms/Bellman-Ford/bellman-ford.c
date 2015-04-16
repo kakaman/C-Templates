@@ -117,6 +117,8 @@ void bellman_ford(graph_t* graph, int source_index, int expected)
     printf("Shortest path graph:\n");
     print_graph(shortest_path);
 
+    graph_delete(shortest_path);
+
     free(distance);
     free(via);
 }

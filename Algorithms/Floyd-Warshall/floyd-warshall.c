@@ -37,17 +37,23 @@
 
 void floyd_warshall(graph_t* graph, int source_index, int expected)
 {
+
+    print_graph(graph);
     int negative_cycles = 0;
 
     int num_vertices = graph->num_vertices;
     int num_edges = graph->num_edges;
 
+    graph_t* shortest_path = graph_init();
     // Initialize the distance
-    int distance = calloc(num_vertices, sizeof(int*));
+    int** distance = malloc(sizeof(int*) * num_vertices);
     for(int i = 0; i < num_vertices; i++)
     {
         distance[i] = malloc(sizeof(int) * num_vertices);
-        memset(distance[i], INFINITY, sizeof(int) * num_vertices);
+        for(int j = 0; j < num_vertices; j++)
+        {
+            distance[i][j] = INFINITY;
+        }
         distance[i][i] = 0;
     }
 
@@ -68,6 +74,10 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
         {
             for(int j = 0; j < num_vertices; j++)
             {
+                if(distance[i][k] == INFINITY || distance[k][j] == INFINITY)
+                {
+                    continue;
+                }
                 int cost = distance[i][k] + distance[k][j];
                 if (distance[i][j] >= cost)
                 {
@@ -75,21 +85,40 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
                 }
                 else
                 {
-                    negative_cycles++;
-                    printf("The graph contains a negative edge cycle.\n");
-                    printf("Current negative cycles: %d\n", negative_cycles);
+//                    negative_cycles++;
+//                    printf("The graph contains a negative edge cycle.\n");
+//                    printf("Current negative cycles: %d\n", negative_cycles);
                 }
             }
         }
     }
 
-    printf("Expected: %d\n", expected);
-    printf("Received: %d\n", negative_cycles);
+    for(int i = 0; i < num_vertices; i++)
+    {
+        int min = 0;
+        for(int j = 0; j < num_vertices; j++)
+        {
+            if( min != i && distance[j][i] < distance[min][i])
+            {
+                min = j;
+            }
+        }
+
+        if(min != i)
+        {
+            add_directed_edge(shortest_path, i + 1, min + 1, distance[min][i]);
+        }
+    }
+//    printf("Expected: %d\n", expected);
+//    printf("Received: %d\n", negative_cycles);
 
     for(int i = 0; i < num_vertices; i++)
     {
         free(distance[i]);
     }
+
+    print_graph(shortest_path);
+    graph_delete(shortest_path);
 
     free(distance);
 }
@@ -155,7 +184,7 @@ int main()
 
     time(&now);
 
-    bellman_ford(graph, 0, 98);
+    floyd_warshall(graph, 0, 98);
 
     time(&end);
     double seconds = difftime(end, now);
