@@ -11,11 +11,11 @@ The in progress data structures are being implemented and/or upgraded with addit
   * Quicksort
   * Priority Queue
   * Dsets
+  * Queue
 
 **Not Implemented Fully**:
   * Binary Dictionary
   * Dictionary
-  * Queue
   * Ctrie
 
 **In progress**:
