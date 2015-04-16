@@ -4,8 +4,6 @@ The data structures under complete can be used right away.
 The not implemented data structures should be used at users risk.
 The in progress data structures are being implemented and/or upgraded with additional features in the inprogress branch. For explanations of the various data structures, go to the [wiki] (https://github.com/kakaman/C-Templates/wiki).
 
-<img src="https://github.com/kakaman/C-Templates.svg?branch=master" /> <img src="https://readthedocs.org/projects/largo/badge/?version=develop" />
-
 **Complete**:
   * Graph
   * Hashtable
