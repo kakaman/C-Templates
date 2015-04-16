@@ -150,70 +150,85 @@ graph_t* parse(char* str)
 int main()
 {
     time_t now, end;
-    graph_t* graph = parse("g1.txt");
+
+    graph_t* graph = parse("test.txt");
 
     time(&now);
 
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
+    bellman_ford(graph, 0, 98);
 
     time(&end);
     double seconds = difftime(end, now);
-    printf("Floyd-Warshall on g1.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
-
-    graph = parse("g2.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Floyd-Warshall on g2.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
-
-    graph = parse("g3.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Floyd-Warshall on g3.txt:\n");
+    printf("Floyd-Warshall on test.txt:\n");
     printf("Ran for %.f seconds.\n\n", seconds);
 
     graph_delete(graph);
 
 
-    graph = parse("large.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Floyd-Warshall on large.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
+//    graph = parse("g1.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on g1.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//    graph = parse("g2.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on g2.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//    graph = parse("g3.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on g3.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//
+//    graph = parse("large.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on large.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
 
     return 1;
 }
