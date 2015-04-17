@@ -39,6 +39,8 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
 {
 
     print_graph(graph);
+    printf("\n");
+
     int negative_cycles = 0;
 
     int num_vertices = graph->num_vertices;
@@ -54,8 +56,9 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
         {
             distance[i][j] = INFINITY;
         }
-        distance[i][i] = 0;
     }
+
+    distance[source_index][source_index] = 0;
 
     for(int i = 0; i < num_edges; i++)
     {
@@ -93,25 +96,45 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
         }
     }
 
-    for(int i = 0; i < num_vertices; i++)
-    {
-        int min = 0;
-        for(int j = 0; j < num_vertices; j++)
-        {
-            if( min != i && distance[j][i] < distance[min][i])
-            {
-                min = j;
-            }
-        }
-
-        if(min != i)
-        {
-            add_directed_edge(shortest_path, i + 1, min + 1, distance[min][i]);
-        }
-    }
 //    printf("Expected: %d\n", expected);
 //    printf("Received: %d\n", negative_cycles);
 
+    int total = 0;
+    int min = 0;
+    for(int i = 0; i < num_vertices; i++)
+    {
+        printf("distance[%d]: ", i);
+        for(int j = 0; j < num_vertices; j++)
+        {
+            if(distance[i][j] == INFINITY)
+                distance[i][j] = UNKNOWN;
+
+            printf(" %d ", distance[i][j]);
+
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+    for(int j = 0; j < num_vertices; j++)
+    {
+        min = INFINITY;
+        for(int i = 0; i < num_vertices; i++)
+        {
+            if (distance[i][j] != UNKNOWN && distance[i][j] < min)
+            {
+                min = distance[i][j];
+            }
+            printf(" %d ", distance[i][j]);
+
+        }
+
+        printf("    MIN: %d\n", min);
+        if(min != INFINITY)
+            total += min;
+    }
+
+    printf("Total: %d\n", total);
     for(int i = 0; i < num_vertices; i++)
     {
         free(distance[i]);

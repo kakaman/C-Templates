@@ -51,14 +51,17 @@
        return distance[], predecessor[]
 */
 
-void bellman_ford(graph_t* graph, int source_index, int expected)
+void bellman_ford(graph_t* graph, int source_index, bool expected)
 {
-    int negative_cycles = 0;
+    printf("Input Graph:\n");
+    print_graph(graph);
+    printf("\n");
+
+    bool negative_cycle = false;
 
     int num_vertices = graph->num_vertices;
     int num_edges = graph->num_edges;
 
-    print_graph(graph);
     graph_t* shortest_path = graph_init();
 
     // Step 1: Initialize the graph.
@@ -103,19 +106,26 @@ void bellman_ford(graph_t* graph, int source_index, int expected)
         int negative_destination = negative_edge->dest->index;
         int negative_weight = negative_edge->weight;
 
+        printf("Hello.\n");
         if(distance[negative_source]  + negative_weight < distance[negative_destination])
         {
-            negative_cycles++;
-            printf("The graph contains a negative edge cycle.\n");
-            printf("Current negative cycles: %d\n", negative_cycles);
+            printf("Neg.\n");
+            negative_cycle = true;
+            break;
         }
     }
 
-    printf("Expected: %d\n", expected);
-    printf("Received: %d\n", negative_cycles);
-
-    printf("Shortest path graph:\n");
-    print_graph(shortest_path);
+    printf("Expected negative cycle: %d\n", expected);
+    if(negative_cycle == true)
+    {
+        printf("The graph has a negative cycle.\n");
+    }
+    else
+    {
+        printf("The graph does not have a negative cycle.\n\n");
+        printf("Shortest path graph:\n");
+        print_graph(shortest_path);
+    }
 
     graph_delete(shortest_path);
 
@@ -158,7 +168,7 @@ int main()
 
     time(&now);
 
-    bellman_ford(graph, 0, 98);
+    bellman_ford(graph, 0, false);
 
     time(&end);
     double seconds = difftime(end, now);
