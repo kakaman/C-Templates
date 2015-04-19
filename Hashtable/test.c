@@ -34,117 +34,120 @@ void const* find_value(char const* key)
     return hashtable_find(hashtable, key, key_len);
 }
 
-int main()
+void const* insert_random_num(int random, int score)
 {
+    int key_len = sizeof(int) + 1;
+    int size = sizeof(int);
+    char key = (char) random;
+    //key[key_len - 1] = '\0';
+
+    return hashtable_insert(hashtable, &key, key_len, &score, size);
+}
+
+void const* find_random_num(int random)
+{
+    int key_len = sizeof(int) + 1;
+    char key = (char) random;
+    //key[key_len - 1] = '\0';
+
+    return hashtable_find(hashtable, &key, key_len);
+}
+
+int main(int argc, char** argv)
+{
+    if(argc == 1)
+        return 1;
+
     hashtable = hashtable_create();
 
-    time_t start = time(NULL);
-//    srand (start);
-//
-//    for(int i = 1; i < 101; i++)
-//    {
-//        printf (" %d ", rand()%100);
-//        if(i % 25 == 0)
-//            printf("\n");
-//    }
-
-    printf("\n");
-
-    int random = 0;
-    srand (start);
-    for(int i = 1; i < 101; i++)
+    if (strcmp(argv[1], "time") == 0)
     {
-        random = rand() % 100;
-        char key = (char) random;
-        insert(&key, i);
-        if(i % 10 == 0)
-            printf(" (%d, %d)\n", random, i);
-        else
-            printf(" (%d, %d) ", random, i);
-    }
-    printf("\n");
-//    srand (start);
-//    for(int i = 1; i < 101; i++)
-//    {
-//        random = rand() % 100;
-//        char key = (char) random;
-//        if(lookup(&key) == true)
-//            printf("True\n");
-//        else
-//            printf("False\n");
-//    }
+        time_t start = time(NULL);
 
-    srand (start);
-    for(int i = 1; i < 101; i++)
+        printf("\n");
+
+        int random = 0;
+        srand(start);
+        for (int i = 1; i < 101; i++)
+        {
+            random = rand() % 100;
+            insert_random_num(random, i);
+            if (i % 10 == 0)
+                printf(" (%d, %d)\n", random, i);
+            else
+                printf(" (%d, %d) ", random, i);
+        }
+        printf("\n");
+
+        srand(start);
+        for (int i = 1; i < 101; i++)
+        {
+            random = rand() % 100;
+
+            int* ret = find_random_num(random);
+
+            if (i % 10 == 0)
+                printf("\n");
+
+            if (ret == NULL)
+                printf(" (%d, NULL) ", random);
+            else
+                printf(" (%d, %d) ", random, *ret);
+        }
+    }
+    else if(strcmp(argv[1], "string") == 0)
     {
-        random = rand() % 100;
-        char key = (char) random;
+        char** string_array = NULL;
 
-        int* ret = find_value(&key);
+        char * line = NULL;
+        size_t len = 0;
+        ssize_t read;
 
-        if(i % 10 == 0)
-            printf("\n");
+        FILE* file = fopen("string_list.txt", "r");
 
-        if(ret == NULL)
-            printf(" (%d, NULL) ", random);
-        else
-            printf(" (%d, %d) ", random, *ret);
+        read = getline(&line, &len, file);
+        int num_strings = 0;
+        int count = 0;
+        sscanf(line, "%d", &num_strings);
+
+        string_array = malloc(sizeof(char*) * num_strings);
+        while ((read = getline(&line, &len, file)) != -1)
+        {
+            string_array[count] = strdup(line);
+            count++;
+        }
+
+        free(line);
+        fclose(file);
+
+        for (int i = 0; i < num_strings; i++)
+        {
+            printf("Score: %d \nRanking: %d\n", i, i);
+            char const* ret = insert(string_array[i], i);
+            printf("%s\n\n", ret);
+        }
+
+        for (int i = num_strings - 1; i >= 0; i--)
+        {
+            bool return_val = false;
+            if (i % 2 == 0)
+                return_val = remove_key(string_array[i]);
+
+            return_val = lookup(string_array[i]);
+            printf("Key found: %d\n", return_val);
+
+            int* test_find = find_value(string_array[i]);
+            if (test_find != NULL)
+                printf("%d\n", *test_find);
+        }
+
+        for(int i = 0; i < num_strings; i++)
+        {
+            free(string_array[i]);
+        }
+        free(string_array);
     }
 
-//    char** string_array = NULL;
-//
-//    char * line = NULL;
-//    size_t len = 0;
-//    ssize_t read;
-//
-//    FILE* file = fopen("string_list.txt", "r");
-//
-//    read = getline(&line, &len, file);
-//    int num_strings = 0;
-//    int count = 0;
-//    sscanf(line, "%d", &num_strings);
-//
-//    string_array = malloc(sizeof(char*) * num_strings);
-//    while ((read = getline(&line, &len, file)) != -1)
-//    {
-//        string_array[count] = strdup(line);
-//        count++;
-//    }
-//
-//    free(line);
-//    fclose(file);
-//
-//    for(int i = 0; i < num_strings; i++)
-//    {
-//        printf("Score: %d \nRanking: %d\n", i, i);
-//        char const* ret = insert(string_array[i], i);
-//        printf("%s\n\n", ret);
-//    }
-//
-////    for(int i = 0; i < num_strings; i++)
-////    {
-////        bool found = false;
-////
-////        found = lookup(string_array[i]);
-////        //char* is_found = (found == 1) ? "true" : "false";
-////        printf("Key found: %d\n", found);
-////        int* find = find_value(string_array[i]);
-////        printf("Key: %d\n",*find);
-////    }
-//
-//    for(int i = num_strings - 1; i >= 0; i--)
-//    {
-//        bool return_val = false;
-//        if( i % 2 == 0)
-//            return_val = remove_key(string_array[i]);
-//
-//        return_val = lookup(string_array[i]);
-//        printf("Key found: %d\n", return_val);
-//
-//        int* test_find = find_value(string_array[i]);
-//        if(test_find != NULL)
-//            printf("%d\n", *test_find);
-//    }
-
+    hashtable_destroy(hashtable);
     return 0;
 }
