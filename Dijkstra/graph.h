@@ -7,8 +7,6 @@
 
 #include "dsets.h"
 
-// ToDo: A fast/feasible way to map the ID to Index without needing too much extra memory or work.
-
 typedef struct _vertex_t vertex_t;
 typedef struct _edge_t edge_t;
 
@@ -54,55 +52,43 @@ typedef struct _graph_t
     int vertices_size;
     vertex_t** vertices;
 
+    int total_weight;
+
     int num_edges;
     int edges_size;
     edge_t** edges;
 } graph_t;
 
-//  For use with Heaps.
-typedef struct _heap_edge_t
-{
-    edge_t* edge;
-    int heap_location;
-} heap_edge_t;
-
-typedef struct _heap_vertex_t
-{
-    vertex_t* vertex;
-    int distance;
-    int heap_location;
-} heap_vertex_t;
-
 graph_t* graph_init();
-graph_t* graph_init();
-
-void graph_malloc(graph_t* graph);
 void graph_delete(graph_t* graph);
-
-void print_graph(graph_t* graph);
 
 void add_directed_edge(graph_t* graph, int source, int destination, int weight);
 void remove_directed_edge(graph_t* graph, edge_t* edge);
+void add_directed_edge_ids(graph_t* graph, int source_id, int destination_id, int weight);
 
-void add_vertex(graph_t* graph, int index, int id);
+vertex_t* add_vertex(graph_t* graph, int index, int id);
 vertex_t* add_or_get_vertex(graph_t* graph, int id);
 int add_edge_to_vertex_list(edge_t*** edges, edge_t* edge, int count, int* size);
 
 void remove_vertex(graph_t* graph, int id);
 int remove_edge_from_vertex_list(edge_t** edges, int i, int count);
 
-edge_t* find_minimum_edge(graph_t* graph);
-edge_t* find_edge(vertex_t* src, vertex_t* dest);
-
 void remove_edge(graph_t* graph, vertex_t* src, vertex_t* dest);
 void remove_edge_from_graph(graph_t* graph, int src, int dest);
 
-int add_weights(graph_t* graph);
+void print_graph(graph_t* graph);
+int get_total_weight(graph_t* graph);
+
+int add_weights(edge_t** edges, int size);
+
+edge_t* find_edge(vertex_t* src, vertex_t* dest);
 
 graph_t* parse_adjacency_list_only(char* str);
-graph_t* parse_undirected_adjacency_only(char* str);
 graph_t* parse_adjacency_list(char* str);
+
+graph_t* parse_undirected_adjacency_only(char* str);
 graph_t* parse_undirected_adjacency_list(char* str);
+
 graph_t* parse_adjacency_matrix(char* str);
 
 graph_t* copy_graph(graph_t* graph);

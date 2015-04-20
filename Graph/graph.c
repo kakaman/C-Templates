@@ -28,6 +28,7 @@ void print_graph(graph_t* graph)
 
     printf("Num_vertices: %d\n", graph->num_vertices);
     printf("Num_edges: %d\n", graph->num_edges);
+    printf("Total weight: %d\n", graph->total_weight);
 
     return;
 }
@@ -52,14 +53,15 @@ graph_t* graph_init()
     //Initialize the variables
     graph->num_vertices = 0;
     graph->num_edges = 0;
-
-    graph->edges_size = 1;
-    graph->edges = malloc(sizeof(edge_t*) * graph->edges_size);
-    memset(graph->edges, 0, sizeof(edge_t*) * graph->edges_size);
+    graph->total_weight = 0;
 
     graph->vertices_size = 1;
     graph->vertices = malloc(sizeof(vertex_t*) * graph->vertices_size);
     memset(graph->vertices, 0, sizeof(vertex_t*) * graph->vertices_size);
+
+    graph->edges_size = 1;
+    graph->edges = malloc(sizeof(edge_t*) * graph->edges_size);
+    memset(graph->edges, 0, sizeof(edge_t*) * graph->edges_size);
 
     return graph;
 }
@@ -176,7 +178,7 @@ void set_edge(edge_t* edge, vertex_t* source, vertex_t* dest)
     return;
 }
 
-void add_vertex(graph_t* graph, int index, int id)
+vertex_t* add_vertex(graph_t* graph, int index, int id)
 {
     if(graph->vertices_size <= index)
     {
@@ -187,7 +189,7 @@ void add_vertex(graph_t* graph, int index, int id)
     graph->vertices[index] = vertex;
     graph->num_vertices++;
 
-    return;
+    return vertex;
 }
 
 vertex_t* add_or_get_vertex(graph_t* graph, int index)
@@ -223,6 +225,7 @@ int add_edge_to_vertex_list(edge_t*** edges, edge_t* edge, int count, int* size)
 void shrink_edges(graph_t* graph, edge_t* edge)
 {
     graph->num_edges--;
+    graph->total_weight -= edge->weight;
     graph->edges[edge->index] = graph->edges[graph->num_edges];
     graph->edges[edge->index]->index = edge->index;
     graph->edges[graph->num_edges] = NULL;
@@ -232,7 +235,6 @@ void shrink_edges(graph_t* graph, edge_t* edge)
     return;
 }
 
-// ToDo: Implement properly. Need to remove any edges that have the vertex as a src or dest.
 void remove_vertex(graph_t* graph, int index)
 {
     vertex_t* vertex = graph->vertices[index];
@@ -314,31 +316,47 @@ void add_directed_edge(graph_t* graph, int source, int destination, int weight)
     edge->weight = weight;
     graph->edges[graph->num_edges] = edge;
     graph->num_edges++;
+    graph->total_weight += weight;
 
-    // If vertex is seen for first time, add to graph.
     int src_index = source - 1;
     vertex_t* src_vertex = add_or_get_vertex(graph, src_index);
     edge->src = src_vertex;
     src_vertex->out_degree = add_edge_to_vertex_list(&src_vertex->out_edges, edge, src_vertex->out_degree, &src_vertex->out_size);
 
-    // If vertex is seen for first time, add to graph.
     int dest_index = destination - 1;
     vertex_t* dest_vertex = add_or_get_vertex(graph, dest_index);
     edge->dest = dest_vertex;
     dest_vertex->in_degree = add_edge_to_vertex_list(&dest_vertex->in_edges, edge, dest_vertex->in_degree, &dest_vertex->in_size);
 
-    //printf("Adding edge: Src: %d Dest: %d, Weight: %d.\n", source, destination, weight);
     return;
 }
 
-edge_t* find_minimum_edge(graph_t* graph)
+// ToDo: Check and see if the id is already added.
+// Or, allow use at user's risk (repetition are allowed because it adds at the end of the array).
+void add_directed_edge_ids(graph_t* graph, int source_id, int destination_id, int weight)
 {
-    if(graph == NULL)
-        return NULL;
+    edge_t* edge = edge_malloc(graph->num_edges);
+    if(graph->num_edges == graph->edges_size)
+    {
+        graph->edges = realloc_clear(graph->edges, sizeof(edge_t*), graph->num_edges, &graph->edges_size);
+    }
 
-    sort_edges_min(graph);
+    edge->weight = weight;
+    graph->edges[graph->num_edges] = edge;
+    graph->num_edges++;
+    graph->total_weight += weight;
 
-    return graph->edges[0];
+    int src_index = graph->num_vertices;
+    vertex_t* src_vertex = add_vertex(graph, src_index, source_id);
+    edge->src = src_vertex;
+    src_vertex->out_degree = add_edge_to_vertex_list(&src_vertex->out_edges, edge, src_vertex->out_degree, &src_vertex->out_size);
+
+    int dest_index = graph->num_vertices;
+    vertex_t* dest_vertex = add_vertex(graph, dest_index, destination_id);
+    edge->dest = dest_vertex;
+    dest_vertex->in_degree = add_edge_to_vertex_list(&dest_vertex->in_edges, edge, dest_vertex->in_degree, &dest_vertex->in_size);
+
+    return;
 }
 
 edge_t* find_edge(vertex_t* src, vertex_t* dest)
@@ -382,15 +400,20 @@ void remove_edge_from_graph(graph_t* graph, int src, int dest)
     return;
 }
 
-int add_weights(graph_t* graph)
+int add_weights(edge_t** edges, int size)
 {
     int total_weight = 0;
-    for(int i = 0; i < graph->num_edges; i++)
+    for(int i = 0; i < size; i++)
     {
-        total_weight += graph->edges[i]->weight;
+        total_weight += edges[i]->weight;
     }
 
     return total_weight;
+}
+
+int get_total_weight(graph_t* graph)
+{
+    return graph->total_weight;
 }
 
 
@@ -402,7 +425,7 @@ graph_t* parse_adjacency_list_only(char* str)
     FILE* file = fopen(str, "r");
     int src, dest, weight;
 
-    while (scanf("%d %d,%d", &src, &dest, &weight) > 0)
+    while (scanf("%d %d %d", &src, &dest, &weight) > 0)
     {
         add_directed_edge(graph, src, dest, weight);
     }
@@ -419,7 +442,7 @@ graph_t* parse_undirected_adjacency_only(char* str)
     FILE* file = fopen(str, "r");
     int src, dest, weight;
 
-    while (scanf("%d %d,%d", &src, &dest, &weight) > 0)
+    while (scanf("%d %d %d", &src, &dest, &weight) > 0)
     {
         add_directed_edge(graph, src, dest, weight);
         add_directed_edge(graph, dest, src, weight);
@@ -451,12 +474,13 @@ graph_t* parse_adjacency_list(char* str)
     {
         int src, dest, weight;
 
-        sscanf(line, "%d %d,%d", &src, &dest, &weight);
+        sscanf(line, "%d %d %d", &src, &dest, &weight);
 
         add_directed_edge(graph, src, dest, weight);
     }
 
     fclose(file);
+    free(line);
 
     if(graph->num_edges != num_edges || graph->num_vertices != num_vertices)
     {
@@ -487,13 +511,14 @@ graph_t* parse_undirected_adjacency_list(char* str)
     {
         int src, dest, weight;
 
-        sscanf(line, "%d %d,%d", &src, &dest, &weight);
+        sscanf(line, "%d %d %d", &src, &dest, &weight);
 
         add_directed_edge(graph, src, dest, weight);
         add_directed_edge(graph, dest, src, weight);
     }
 
     fclose(file);
+    free(line);
 
     if(graph->num_vertices != num_vertices) // graph->num_edges != num_edges ||
     {
@@ -520,7 +545,7 @@ edge_t* copy_edge(edge_t* edge)
     return copy;
 }
 
-// For use in quicksort.
+// Functions for use in quicksort
 void print_edges(void* ptr)
 {
     edge_t* edge_ptr = (edge_t*) ptr;

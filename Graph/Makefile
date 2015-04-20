@@ -7,7 +7,7 @@ LIBS =
 
 all: graph
 
-heap.o: heap.c heap.h
+test.o: test.c
 	$(CC) -c $(FLAGS) $(INC) $< -o $@ $(LIBS)
 
 graph.o: graph.c graph.h
@@ -19,7 +19,7 @@ dsets.o: dsets.c dsets.h
 quicksort.o: quicksort.c quicksort.h
 	$(CC) -c $(FLAGS) $(INC) $< -o $@ $(LIBS)
 
-graph: mst.o heap.o graph.o dsets.o quicksort.o
+graph: test.o graph.o dsets.o quicksort.o
 	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
 
 clean:
