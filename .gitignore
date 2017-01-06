@@ -124,4 +124,29 @@ ENV/
 .spyderproject
 
 # Rope project settings
-.ropeprojectDebug/
+.ropeprojectDebug/# Global gitignore #
+####################
+
+# OSX #
+#######
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Secret Files #
+################
+*.secret
+*.secrets
+
+# Temp #
+########
+*.ref
+*.tmp
+*.temp
+
+# Project Specific #
+####################
+
+.project
