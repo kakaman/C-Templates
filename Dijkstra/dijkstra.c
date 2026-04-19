@@ -87,15 +87,17 @@ void dijkstra_array(graph_t* graph, int source)
     int current_vertex = source;
 
     int* distance = malloc(sizeof(int) * num_vertices);
-    memset(distance, INFINITY, sizeof(int) * num_vertices);
-    distance[current_vertex] = 0;
-
     int* via = malloc(sizeof(int) * num_vertices);
-    memset(via, INVALID, sizeof(int) * num_vertices);
-    via[current_vertex] = 0;
+    bool* visited = malloc(sizeof(bool) * num_vertices);
 
-    bool visited = malloc(sizeof(bool) * num_vertices);
-    memset(via, false, sizeof(bool) * num_vertices);
+    for(int i = 0; i < num_vertices; i++)
+    {
+        distance[i] = INFINITY;
+        via[i] = INVALID;
+        visited[i] = false;
+    }
+    distance[current_vertex] = 0;
+    via[current_vertex] = 0;
 
     while(visited[current_vertex] == false)
     {
@@ -130,6 +132,12 @@ void dijkstra_array(graph_t* graph, int source)
     {
         printf("Vertex: %d, Distance: %d, Via: %d\n", i + 1, distance[i], via[i]);
     }
+
+    free(distance);
+    free(visited);
+    free(via);
+
+    return;
 }
 
 // Given vertex_id, find the location in graph->vertices
@@ -149,12 +157,16 @@ graph_t* dijkstra_min_heap(graph_t* graph, int source_vertex_index)
     printf("shortest_path graph initialized.\n");
 
     int num_vertices = copy->num_vertices;
-    bool visited[num_vertices];
-    int via[num_vertices];
+    int* via = malloc(sizeof(int) * num_vertices);
+    bool* visited = malloc(sizeof(bool) * num_vertices);
+
+    for(int i = 0; i < num_vertices; i++)
+    {
+        via[i] = INVALID;
+        visited[i] = false;
+    }
 
     printf("Inserting into min_heap.\n");
-
-    visited[source_vertex_index] = false;
     via[source_vertex_index] = 0;
     copy->vertices[source_vertex_index]->heap_element.distance = 0;
     heap_insert(heap, copy->vertices[source_vertex_index]);
@@ -219,7 +231,7 @@ graph_t* dijkstra_min_heap(graph_t* graph, int source_vertex_index)
 
         // FIXME: It is currently adding the ID's.
         // ToDo: A fast/feasible way to map the ID to Index without needing too much extra memory or work.
-        add_directed_edge_index(shortest_path, via[index], top->id, top->heap_element.distance);
+        add_directed_edge_ids(shortest_path, via[index], top->id, top->heap_element.distance);
     }
 
     printf("Finished.\n");
@@ -237,9 +249,11 @@ graph_t* dijkstra_min_heap(graph_t* graph, int source_vertex_index)
         }
  */
 
+// Dijkstra_array() works as intended.
 int main()
 {
-    graph_t* graph = parse_graph();
+    graph_t* graph = parse_adjacency_list("test.txt");
     print_graph(graph);
-    dijkstra_array(graph, 1);
+    dijkstra_array(graph, 0);
+    graph_delete(graph);
 }

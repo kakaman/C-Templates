@@ -10,12 +10,13 @@
 #
 # Modules excluded because they are incomplete or unsupported on this
 # platform (see README.md): Binary Dictionary, Dictionary, Ctrie,
-# Nana Ctrie, Bloom Filter, Matrix, Undirected Graph, Dijkstra,
-# Algorithms/Floyd-Warshall, Alloc.
+# Nana Ctrie, Bloom Filter, Matrix, Undirected Graph, Alloc.
 
 MODULES := \
     Algorithms/Bellman-Ford \
+    Algorithms/Floyd-Warshall \
     Algorithms/Johnson \
+    Dijkstra \
     Disjoint\ Sets \
     Functions \
     Graph \

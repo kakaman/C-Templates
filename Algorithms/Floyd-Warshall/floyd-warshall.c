@@ -37,19 +37,28 @@
 
 void floyd_warshall(graph_t* graph, int source_index, int expected)
 {
+
+    print_graph(graph);
+    printf("\n");
+
     int negative_cycles = 0;
 
     int num_vertices = graph->num_vertices;
     int num_edges = graph->num_edges;
 
+    graph_t* shortest_path = graph_init();
     // Initialize the distance
-    int distance = calloc(num_vertices, sizeof(int*));
+    int** distance = malloc(sizeof(int*) * num_vertices);
     for(int i = 0; i < num_vertices; i++)
     {
         distance[i] = malloc(sizeof(int) * num_vertices);
-        memset(distance[i], INFINITY, sizeof(int) * num_vertices);
-        distance[i][i] = 0;
+        for(int j = 0; j < num_vertices; j++)
+        {
+            distance[i][j] = INFINITY;
+        }
     }
+
+    distance[source_index][source_index] = 0;
 
     for(int i = 0; i < num_edges; i++)
     {
@@ -68,6 +77,10 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
         {
             for(int j = 0; j < num_vertices; j++)
             {
+                if(distance[i][k] == INFINITY || distance[k][j] == INFINITY)
+                {
+                    continue;
+                }
                 int cost = distance[i][k] + distance[k][j];
                 if (distance[i][j] >= cost)
                 {
@@ -75,21 +88,60 @@ void floyd_warshall(graph_t* graph, int source_index, int expected)
                 }
                 else
                 {
-                    negative_cycles++;
-                    printf("The graph contains a negative edge cycle.\n");
-                    printf("Current negative cycles: %d\n", negative_cycles);
+//                    negative_cycles++;
+//                    printf("The graph contains a negative edge cycle.\n");
+//                    printf("Current negative cycles: %d\n", negative_cycles);
                 }
             }
         }
     }
 
-    printf("Expected: %d\n", expected);
-    printf("Received: %d\n", negative_cycles);
+//    printf("Expected: %d\n", expected);
+//    printf("Received: %d\n", negative_cycles);
 
+    int total = 0;
+    int min = 0;
+    for(int i = 0; i < num_vertices; i++)
+    {
+        printf("distance[%d]: ", i);
+        for(int j = 0; j < num_vertices; j++)
+        {
+            if(distance[i][j] == INFINITY)
+                distance[i][j] = UNKNOWN;
+
+            printf(" %d ", distance[i][j]);
+
+        }
+        printf("\n");
+    }
+
+    printf("\n");
+    for(int j = 0; j < num_vertices; j++)
+    {
+        min = INFINITY;
+        for(int i = 0; i < num_vertices; i++)
+        {
+            if (distance[i][j] != UNKNOWN && distance[i][j] < min)
+            {
+                min = distance[i][j];
+            }
+            printf(" %d ", distance[i][j]);
+
+        }
+
+        printf("    MIN: %d\n", min);
+        if(min != INFINITY)
+            total += min;
+    }
+
+    printf("Total: %d\n", total);
     for(int i = 0; i < num_vertices; i++)
     {
         free(distance[i]);
     }
+
+    print_graph(shortest_path);
+    graph_delete(shortest_path);
 
     free(distance);
 }
@@ -150,70 +202,85 @@ graph_t* parse(char* str)
 int main()
 {
     time_t now, end;
-    graph_t* graph = parse("g1.txt");
+
+    graph_t* graph = parse("test.txt");
 
     time(&now);
 
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
+    floyd_warshall(graph, 0, 98);
 
     time(&end);
     double seconds = difftime(end, now);
-    printf("Floyd-Warshall on g1.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
-
-    graph = parse("g2.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Floyd-Warshall on g2.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
-
-    graph = parse("g3.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Floyd-Warshall on g3.txt:\n");
+    printf("Floyd-Warshall on test.txt:\n");
     printf("Ran for %.f seconds.\n\n", seconds);
 
     graph_delete(graph);
 
 
-    graph = parse("large.txt");
-
-    time(&now);
-
-    for(int i = 0; i < graph->num_vertices; i++)
-    {
-        floyd_warshall(graph, i, UNKNOWN);
-    }
-
-    time(&end);
-    double seconds = difftime(end, now);
-    printf("Floyd-Warshall on large.txt:\n");
-    printf("Ran for %.f seconds.\n\n", seconds);
-
-    graph_delete(graph);
+//    graph = parse("g1.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on g1.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//    graph = parse("g2.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on g2.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//    graph = parse("g3.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on g3.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
+//
+//
+//    graph = parse("large.txt");
+//
+//    time(&now);
+//
+//    for(int i = 0; i < graph->num_vertices; i++)
+//    {
+//        floyd_warshall(graph, i, UNKNOWN);
+//    }
+//
+//    time(&end);
+//    seconds = difftime(end, now);
+//    printf("Floyd-Warshall on large.txt:\n");
+//    printf("Ran for %.f seconds.\n\n", seconds);
+//
+//    graph_delete(graph);
 
     return 1;
 }

@@ -28,6 +28,8 @@ void print_graph(graph_t* graph)
 
     printf("Num_vertices: %d\n", graph->num_vertices);
     printf("Num_edges: %d\n", graph->num_edges);
+    int total_weight = add_weights(graph);
+    printf("Total weight: %d\n", total_weight);
 
     return;
 }
