@@ -1,18 +1,15 @@
-#Heap compiler
+#Matrix compiler
 
 CC = gcc
 INC =
 FLAGS = -D_GNU_SOURCE -g -W -Wall -std=c99
 LIBS =
 
-all: heap
+all: matrix.o
 
-heap.o: heap.c heap.h
+matrix.o: matrix.c matrix.h
 	$(CC) -c $(FLAGS) $(INC) $< -o $@ $(LIBS)
 
-heap: heap.o
-	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
-
 clean:
-	$(RM) -r *.o heap
+	$(RM) -r *.o
 

@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "queue.h"
 
@@ -26,7 +27,7 @@ queue_node_t* node_init(void* element, int data_size)
 
 queue_t* queue_init(void (*enumerate)(void*, void*), void (*print)(void*))
 {
-	queue_t* queue = malloc(sieof(queue_t));
+	queue_t* queue = malloc(sizeof(queue_t));
 
 	queue->head = NULL;
 	queue->tail = NULL;

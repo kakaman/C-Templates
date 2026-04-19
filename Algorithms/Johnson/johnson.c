@@ -95,7 +95,7 @@ int main()
     }
 
     time(&end);
-    double seconds = difftime(end, now);
+    seconds = difftime(end, now);
     printf("Johnson on g2.txt:\n");
     printf("Ran for %.f seconds.\n\n", seconds);
 
@@ -111,7 +111,7 @@ int main()
     }
 
     time(&end);
-    double seconds = difftime(end, now);
+    seconds = difftime(end, now);
     printf("Johnson on g3.txt:\n");
     printf("Ran for %.f seconds.\n\n", seconds);
 
@@ -128,7 +128,7 @@ int main()
     }
 
     time(&end);
-    double seconds = difftime(end, now);
+    seconds = difftime(end, now);
     printf("Johnson on large.txt:\n");
     printf("Ran for %.f seconds.\n\n", seconds);
 

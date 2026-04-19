@@ -7,6 +7,8 @@
 
 #pragma once
 
+#include <stdbool.h>
+
 // Priority Queue implementation with a Minimum Heap as a base.
 typedef struct _pqueue_t
 {
@@ -32,7 +34,7 @@ void const* pqueue_remove(pqueue_t* pqueue, int location);
 void const* get_pqueue_top(pqueue_t* pqueue);
 void const* pqueue_remove_top(pqueue_t* pqueue);
 
-void const* pqueue_find(pqueue_t* pqueue, void const* data);
+bool pqueue_find(pqueue_t* pqueue, void const* data);
 
 // Decrease key functions.
 void pqueue_decrease_key(pqueue_t* pqueue, void const* data);

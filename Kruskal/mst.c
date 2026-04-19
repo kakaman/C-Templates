@@ -522,12 +522,15 @@ int find_dest_id(hashtable_t* hashtable, unsigned int** permutations_array, int 
 {
     int count = 0;
     int dest_id = permutations_array[i][count];
-    int dest_index = hashtable_lookup(hashtable, dest_id);
+    char key[16];
+    sprintf(key, "%d", dest_id);
+    int dest_index = hashtable_lookup(hashtable, key);
 
     while(dest_index == INVALID && count < 300)
     {
         dest_id = permutations_array[i][count];
-        dest_index = hashtable_lookup(hashtable, dest_id);
+        sprintf(key, "%d", dest_id);
+        dest_index = hashtable_lookup(hashtable, key);
         count++;
     }
 
@@ -572,12 +575,15 @@ void question_two(graph_t* graph, hashtable_t* hashtable, unsigned int** permuta
             vertex_t* source = vertices[i];
 
             int dest_id = permutations_array[i][count];
-            int dest_index = hashtable_lookup(hashtable, dest_id);
+            char key[16];
+            sprintf(key, "%d", dest_id);
+            int dest_index = hashtable_lookup(hashtable, key);
 
             while(dest_index == INVALID && count < 300)
             {
                 dest_id = permutations_array[i][count];
-                dest_index = hashtable_lookup(hashtable, dest_id);
+                sprintf(key, "%d", dest_id);
+                dest_index = hashtable_lookup(hashtable, key);
                 count++;
             }
 
@@ -716,7 +722,7 @@ graph_t* parse_clustering_big(graph_t* graph, hashtable_t** hashtable, char* inp
         char key[10];
         sprintf(key, "%d", id);
 
-        hashtable_data_t* data = hashtable_data_create(key, count, 0, data_size);
+        hashtable_data_t* data = hashtable_data_create(key, &count, 0, data_size);
 
         char* existing = hashtable_insert(*hashtable, data);
         if (strcmp(key, existing) == 0)

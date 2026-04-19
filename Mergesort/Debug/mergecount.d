@@ -1,1 +1,0 @@
-mergecount.d: ../mergecount.c

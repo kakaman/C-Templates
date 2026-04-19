@@ -5,14 +5,11 @@ INC =
 FLAGS = -D_GNU_SOURCE -g -W -Wall -std=c99
 LIBS =
 
-all: quicksort
+all: quicksort.o
 
 quicksort.o: quicksort.c quicksort.h
 	$(CC) -c $(FLAGS) $(INC) $< -o $@ $(LIBS)
 
-quicksort: quicksort.o
-	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
-
 clean:
-	$(RM) -r *.o quicksort
+	$(RM) -r *.o
 

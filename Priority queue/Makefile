@@ -5,14 +5,11 @@ INC =
 FLAGS = -D_GNU_SOURCE -g -W -Wall -std=c99
 LIBS =
 
-all: priorityqueue
+all: priorityqueue.o
 
-priorityqueue.o: priorityqueue.c
+priorityqueue.o: priorityqueue.c priorityqueue.h
 	$(CC) -c $(FLAGS) $(INC) $< -o $@ $(LIBS)
 
-priorityqueue: priorityqueue.o
-	$(CC) $(FLAGS) $^ -o $@ $(LIBS)
-
 clean:
-	$(RM) -r *.o priorityqueue
+	$(RM) -r *.o
 
