@@ -12,8 +12,8 @@ typedef struct _queue_node_t
 {
     void* element; // Stored value
     int data_size;
-    struct queue_node_t* next; // Link to next node
-    struct queue_node_t* prev; // Link to prev node
+    struct _queue_node_t* next; // Link to next node
+    struct _queue_node_t* prev; // Link to prev node
 } queue_node_t;
 
 typedef struct _queue_t

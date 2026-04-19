@@ -431,10 +431,10 @@ int str_to_int(char* str, int string_length)
 
 char* int_to_str(int convert)
 {
-    char id_str[7];
+    char* id_str = malloc(12);
     sprintf(id_str, "%d", convert);
 
-    return &id_str;
+    return id_str;
 }
 
 int diff_bits(int left, int right, int num_bits)
