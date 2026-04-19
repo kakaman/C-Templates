@@ -34,6 +34,7 @@ void print_graph(graph_t* graph)
 
 void print_vertex_set(void const* ptr)
 {
+    (void)ptr;
     printf("Vertex\n");
 
     return;
@@ -41,6 +42,7 @@ void print_vertex_set(void const* ptr)
 
 void print_edge_set(void const* ptr)
 {
+    (void)ptr;
     printf("Edge\n");
 
     return;

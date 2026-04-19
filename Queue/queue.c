@@ -27,6 +27,7 @@ queue_node_t* node_init(void* element, int data_size)
 
 queue_t* queue_init(void (*enumerate)(void*, void*), void (*print)(void*))
 {
+	(void)print;
 	queue_t* queue = malloc(sizeof(queue_t));
 
 	queue->head = NULL;

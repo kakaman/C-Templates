@@ -60,7 +60,6 @@ void bellman_ford(graph_t* graph, int source_index, bool expected)
     bool negative_cycle = false;
 
     int num_vertices = graph->num_vertices;
-    int num_edges = graph->num_edges;
 
     graph_t* shortest_path = graph_init();
 

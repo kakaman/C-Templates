@@ -159,7 +159,7 @@ void print_bits_big_endian(size_t const size, void const * const ptr)
     unsigned char *b = (unsigned char*) ptr;
     unsigned char byte;
 
-    for (int i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         for (int j = 0; j < 8; j++)
         {
@@ -182,7 +182,7 @@ int strtob(char* str, int string_length, int bits_in_label)
     int id = 0;
     for(int i = 0, count = 0; i < string_length && count < bits_in_label; i++ , count++)
     {
-        (id << count) & (str[i] - '0');
+        (void)((id << count) & (str[i] - '0'));
     }
 
 
@@ -196,6 +196,7 @@ int strtob(char* str, int string_length, int bits_in_label)
 
 int str_to_int(char* str, int string_length, int bits_in_label)
 {
+    (void)bits_in_label;
 //    printf("str_to_int(%s):\n", str);
     int id = 0;
     for(int i = 0; i < string_length; i++)
@@ -334,12 +335,12 @@ void parse_and_write(char* input_file, char* output_file)
 
 int main()
 {
-    unsigned char* key = strdup("Hello");
+    char* key = strdup("Hello");
 
     //size_t len = strlen(&key);
-    char* hex = malloc(sizeof(char) * 8);
 
-    Pearson_64_char(key, 4);
+    Pearson_64_char((unsigned char*)key, 4);
+    free(key);
 
     return 1;
 }

@@ -34,7 +34,7 @@ static const unsigned char table_random_bytes[256] =
 unsigned int hash_function(unsigned char* key)
 {
     unsigned char hh[8];
-    int key_len = strlen(key);
+    int key_len = strlen((char*)key);
     unsigned int hash = table_random_bytes[key[0]] % 256;
     unsigned char h = 0;
     for(int i = 0; i < 8; i++)

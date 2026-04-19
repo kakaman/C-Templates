@@ -532,6 +532,7 @@ graph_t* parse_undirected_adjacency_list(char* str)
 // ToDo: Construct a graph from a file with an adjacency matrix.
 graph_t* parse_adjacency_matrix(char* str)
 {
+    (void)str;
     return NULL;
 }
 

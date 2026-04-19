@@ -83,7 +83,6 @@ void dijkstra_print_data(void const* ptr)
 void dijkstra_array(graph_t* graph, int source)
 {
     int num_vertices = graph->num_vertices;
-    int num_edges = graph->num_edges;
     int current_vertex = source;
 
     int* distance = malloc(sizeof(int) * num_vertices);

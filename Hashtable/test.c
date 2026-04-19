@@ -84,7 +84,7 @@ int main(int argc, char** argv)
         {
             random = rand() % 100;
 
-            int* ret = find_random_num(random);
+            int const* ret = find_random_num(random);
 
             if (i % 10 == 0)
                 printf("\n");
@@ -136,7 +136,7 @@ int main(int argc, char** argv)
             return_val = lookup(string_array[i]);
             printf("Key found: %d\n", return_val);
 
-            int* test_find = find_value(string_array[i]);
+            int const* test_find = find_value(string_array[i]);
             if (test_find != NULL)
                 printf("%d\n", *test_find);
         }

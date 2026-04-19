@@ -357,8 +357,6 @@ char* binary_fmt(uintmax_t x, char buf[static FMT_BUF_SIZE], int num_bits)
 
 unsigned int* create_binary_permutations(int id, int num_bits)
 {
-    static char tmp[FMT_BUF_SIZE];
-
     unsigned int* permutations = malloc(sizeof(unsigned int) * 300);
     int index = 0;
 
@@ -391,6 +389,7 @@ unsigned int* create_binary_permutations(int id, int num_bits)
 
 void store_bits(char* input, int* id, int num_bits)
 {
+    (void)num_bits;
     int size = strlen(input);
     int count = 0;
     for (int i = size - 1; i >= 0; i--)
@@ -472,6 +471,7 @@ int diff_bits(int left, int right, int num_bits)
 // Implementation if the graph has been created with distances.
 void clusters_after_weight(graph_t* graph, int bits, int expected_clusters, int edge_cost, int expected_num_edges)
 {
+    (void)bits;
     if (graph == NULL)
     {
         printf("Invalid input. question_one()\n");
@@ -587,7 +587,7 @@ void question_two(graph_t* graph, hashtable_t* hashtable, unsigned int** permuta
                 count++;
             }
 
-            printf("dest_id: %d dest_index\n", dest_id, dest_index);
+            printf("dest_id: %d dest_index: %d\n", dest_id, dest_index);
             if(dest_index == INVALID)
                 continue;
 
@@ -644,9 +644,9 @@ void print_bits_big_endian(size_t const size, void const * const ptr)
 {
     unsigned char *b = (unsigned char*) ptr;
     unsigned char byte;
-    int i, j;
+    int j;
 
-    for (i = 0; i < size; i++)
+    for (size_t i = 0; i < size; i++)
     {
         for (j = 0; j < 8; j++)
         {
@@ -664,6 +664,7 @@ void print_bits_big_endian(size_t const size, void const * const ptr)
 
 graph_t* parse_clustering_one(graph_t* graph, char* input_file, int num_lines, int num_nodes)
 {
+    (void)num_lines;
     graph = graph_init();
 
     char * line = NULL;
@@ -676,13 +677,11 @@ graph_t* parse_clustering_one(graph_t* graph, char* input_file, int num_lines, i
 
     read = getline(&line, &len, file);
     sscanf(line, "%d", &num_nodes);
-    num_lines++;
 
     while ((read = getline(&line, &len, file)) != -1)
     {
         sscanf(line, "%d %d %d", &src, &dest, &weight);
         add_directed_edge(graph, src, dest, weight);
-        num_lines++;
     }
 
     free(line);
@@ -696,7 +695,6 @@ graph_t* parse_clustering_big(graph_t* graph, hashtable_t** hashtable, char* inp
     graph = graph_init();
     *hashtable = hashtable_create();
 
-    int num_lines = 0;
     int num_nodes = 0;
     int data_size = sizeof(unsigned int);
 
@@ -711,7 +709,6 @@ graph_t* parse_clustering_big(graph_t* graph, hashtable_t** hashtable, char* inp
     read = getline(&line, &len, file);
     sscanf(line, "Nodes: %d Bits: %d", &num_nodes, &num_bits[0]);
     permutations[0] = malloc(sizeof(unsigned int*) * (num_nodes));
-    num_lines++;
 
     int count = 0;
     while ((read = getline(&line, &len, file)) != -1)

@@ -37,11 +37,11 @@
 
 void floyd_warshall(graph_t* graph, int source_index, int expected)
 {
+    (void)source_index;
+    (void)expected;
 
     print_graph(graph);
     printf("\n");
-
-    int negative_cycles = 0;
 
     int num_vertices = graph->num_vertices;
     int num_edges = graph->num_edges;

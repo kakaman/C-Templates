@@ -30,7 +30,6 @@ void bellman_ford(graph_t* graph, int source_index, bool expected)
     bool negative_cycle = false;
 
     int num_vertices = graph->num_vertices;
-    int num_edges = graph->num_edges;
 
     graph_t* shortest_path = graph_init();
 
@@ -118,6 +117,9 @@ void bellman_ford(graph_t* graph, int source_index, bool expected)
 
 void johnson(graph_t* graph, int source_index, int expected)
 {
+    (void)graph;
+    (void)source_index;
+    (void)expected;
     return;
 }
 
